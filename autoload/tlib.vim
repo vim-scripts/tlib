@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-04-24.
-" @Revision:    1028
+" @Last Change: 2007-04-26.
+" @Revision:    1058
 " vimscript:    1863
 "
 " TODO:
@@ -13,7 +13,7 @@
 if &cp || exists("loaded_tlib_autoload") "{{{2
     finish
 endif
-let loaded_tlib_autoload = 1
+let loaded_tlib_autoload = loaded_tlib
 
 
 """ Scratch buffer {{{1
@@ -135,7 +135,7 @@ fun! s:DisplayList(world, type, handlers, query, ...) "{{{3
         if a:world.state != '\<display\>'
             norm! ggdG
             let w = &co - &fdc - 1
-            call append(0, map(copy(list), 'printf("%-'. w .'.'. w .'s", v:val)'))
+            call append(0, map(copy(list), 'printf("%-'. w .'.'. w .'s", substitute(v:val, ''[[:cntrl:][:space:]]'', " ", "g"))'))
             " call append(0, a:query)
             norm! Gddgg
             let resize  = get(a:world, 'resize', 0)
@@ -143,13 +143,27 @@ fun! s:DisplayList(world, type, handlers, query, ...) "{{{3
             exec 'resize '. (resize == 0 ? ll : min([ll, resize]))
         endif
         let x = len(ll) + 1
-        call map(b:tlibDisplayListMarks, 's:DisplayListMark(x, v:val, ":")')
-        let b:tlibDisplayListMarks = copy(a:world.sel_idx)
-        call map(b:tlibDisplayListMarks, 's:DisplayListMark(x, index(a:world.table, v:val) + 1, "#")')
+        " for idx in keys(b:tlibDisplayListMarks)
+        "     if index(a:world.sel_idx, idx) == -1
+        "         unlet b:tlibDisplayListMarks[idx]
+        "         call s:DisplayListMark(x, idx, ":")
+        "     endif
+        " endfor
+        " for idx in a:world.sel_idx
+        "     if !has_key(b:tlibDisplayListMarks, idx) || b:tlibDisplayListMarks[idx] != '#'
+        "         call s:DisplayListMark(x, idx, "#")
+        "         let b:tlibDisplayListMarks[idx] = '#'
+        "     endif
+        " endfor
+        " let b:tlibDisplayListMarks[a:world.prefidx] = '*'
+        " call s:DisplayListMark(x, a:world.prefidx, "*")
+        call filter(b:tlibDisplayListMarks, 'index(a:world.sel_idx, v:val) == -1')
+        call map(b:tlibDisplayListMarks, 's:DisplayListMark(x, v:val[0], ":")')
+        let b:tlibDisplayListMarks = map(copy(a:world.sel_idx), 's:DisplayListMark(x, v:val, "#")')
         call add(b:tlibDisplayListMarks, a:world.prefidx)
         call s:DisplayListMark(x, a:world.prefidx, '*')
         exec 'norm! '. a:world.offset .'zt'
-        echo a:query
+        let &statusline = a:query
     endif
     redraw
 endf
@@ -240,6 +254,7 @@ fun! s:UseInputListScratch(world)
     hi def link InputlListCursor Search
     hi def link InputlListSelected IncSearch
     " hi def link InputlListIndex Special
+    " let b:tlibDisplayListMarks = {}
     let b:tlibDisplayListMarks = []
     return scratch
 endf
@@ -540,6 +555,9 @@ fun! tlib#InputList(type, query, list, ...) "{{{3
             let key_agents[k] = handler.agent
         endif
     endfor
+    let statusline  = &statusline
+    let laststatus  = &laststatus
+    let &laststatus = 2
 
     try
         let world = {'state': 'reset', 'type': a:type, 'base': a:list, 'list': [], 'sel_idx': [],
@@ -740,6 +758,8 @@ fun! tlib#InputList(type, query, list, ...) "{{{3
         endif
 
     finally
+        let &statusline = statusline
+        let &laststatus = laststatus
         call tlib#CloseScratch(world)
         echo
         redraw
@@ -857,6 +877,19 @@ fun! tlib#All(list, expr)
     return len(tlib#FindAll(a:list, a:expr)) == len(a:list)
 endf
 
+function! tlib#Remove(list, element)
+    let idx = index(a:list, a:element)
+    if idx == -1
+        call remove(a:list, idx)
+    endif
+    return a:list
+endf
+
+function! tlib#RemoveAll(list, element)
+    call filter(a:list, 'v:val != a:element')
+    return a:list
+endf
+
 
 """ Variables {{{1
 
@@ -870,31 +903,17 @@ fun! tlib#GetValue(var, scope, ...)
     return a:0 >= 1 ? a:1 : ''
 endf
 
-
-finish
------------------------------------------------------------------------
-This library provides some utility functions. There isn't much need to 
-install it unless another plugin requires you to do so.
-
-tlib#InputList(query, list)
-    Select items from a list that can be filtered using a regexp and 
-    does some other tricks. The goal of the function is to let you 
-    select items from a list with only a few keystrokes. The function 
-    can be used to select a single item or multiple items.
-
-tlib#EditList(query, list)
-    Edit items in a list. Return the modified list.
-
-
-CHANGES:
-0.1
-Initial release
-
-0.2
-- More list convenience functions
-- tlib#EditList()
-- tlib#InputList(): properly handle duplicate items; it type contains 
-'i', the list index + 1 is returned, not the element
+fun! tlib#GetVar(var, scope, ...)
+    let pre  = []
+    let post = []
+    for scope in split(a:scope, '\zs')
+        let var = scope .':'. a:var
+        call add(pre,  printf('exists("%s") ? %s : (', var, var))
+        call add(post, ')')
+    endfor
+    let default = a:0 >= 1 ? a:1 : ''
+    return join(pre) . string(default) . join(post)
+endf
 
 
 " vi: fdm=marker

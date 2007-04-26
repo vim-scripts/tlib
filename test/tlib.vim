@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2006-12-17.
-" @Last Change: 2007-04-24.
-" @Revision:    25
+" @Last Change: 2007-04-25.
+" @Revision:    31
 
 TAssertBegin! "tlib", 'autoload/tlib.vim'
 
@@ -36,11 +36,21 @@ TAssert IsEqual(tlib#Flatten([0,[1,2,[3,""]]]), [0,1,2,3,""])
 let g:foo = 1
 let g:bar = 2
 let b:bar = 3
+let s:bar = 4
+
 TAssert IsEqual(tlib#GetValue('bar', 'bg'), 3)
 TAssert IsEqual(tlib#GetValue('bar', 'g'), 2)
 TAssert IsEqual(tlib#GetValue('foo', 'bg'), 1)
 TAssert IsEqual(tlib#GetValue('foo', 'g'), 1)
 TAssert IsEqual(tlib#GetValue('none', 'l'), '')
+
+TAssert IsEqual(eval(tlib#GetVar('bar', 'bg')), 3)
+TAssert IsEqual(eval(tlib#GetVar('bar', 'g')), 2)
+" TAssert IsEqual(eval(tlib#GetVar('bar', 'sg')), 4)
+TAssert IsEqual(eval(tlib#GetVar('foo', 'bg')), 1)
+TAssert IsEqual(eval(tlib#GetVar('foo', 'g')), 1)
+TAssert IsEqual(eval(tlib#GetVar('none', 'l')), '')
+
 unlet g:foo
 unlet g:bar
 unlet b:bar

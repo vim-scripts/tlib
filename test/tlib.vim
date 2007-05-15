@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2006-12-17.
-" @Last Change: 2007-04-25.
-" @Revision:    31
+" @Last Change: 2007-05-01.
+" @Revision:    55
 
 TAssertBegin! "tlib", 'autoload/tlib.vim'
 
@@ -54,6 +54,33 @@ TAssert IsEqual(eval(tlib#GetVar('none', 'l')), '')
 unlet g:foo
 unlet g:bar
 unlet b:bar
+
+TAssert IsEqual(tlib#FileSplit('foo/bar/filename.txt'), ['foo', 'bar', 'filename.txt'])
+TAssert IsEqual(tlib#FileSplit('/foo/bar/filename.txt'), ['', 'foo', 'bar', 'filename.txt'])
+TAssert IsEqual(tlib#FileSplit('ftp://foo/bar/filename.txt'), ['ftp:/', 'foo', 'bar', 'filename.txt'])
+
+TAssert IsEqual(tlib#FileJoin(['foo', 'bar', 'filename.txt']), 'foo/bar/filename.txt')
+TAssert IsEqual(tlib#FileJoin(['', 'foo', 'bar', 'filename.txt']), '/foo/bar/filename.txt')
+TAssert IsEqual(tlib#FileJoin(['ftp:/', 'foo', 'bar', 'filename.txt']), 'ftp://foo/bar/filename.txt')
+
+TAssert IsEqual(tlib#RelativeFilename('foo/bar/filename.txt', 'foo'), 'bar/filename.txt')
+TAssert IsEqual(tlib#RelativeFilename('foo/bar/filename.txt', 'foo/base'), '../bar/filename.txt')
+TAssert IsEqual(tlib#RelativeFilename('filename.txt', 'foo/base'), '../../filename.txt')
+TAssert IsEqual(tlib#RelativeFilename('/foo/bar/filename.txt', '/boo/base'), '../../foo/bar/filename.txt')
+TAssert IsEqual(tlib#RelativeFilename('/bar/filename.txt', '/boo/base'), '../../bar/filename.txt')
+TAssert IsEqual(tlib#RelativeFilename('/foo/bar/filename.txt', '/base'), '../foo/bar/filename.txt')
+TAssert IsEqual(tlib#RelativeFilename('c:/bar/filename.txt', 'x:/boo/base'), 'c:/bar/filename.txt')
+
+let test = tlib#Test#New()
+TAssert test.IsA('Test')
+TAssert !test.IsA('foo')
+TAssert test.RespondTo('RespondTo')
+TAssert !test.RespondTo('RespondToNothing')
+let test1 = tlib#Test#New()
+TAssert test.IsRelated(test1)
+let testworld = tlib#World#New()
+TAssert !test.IsRelated(testworld)
+unlet test test1 testworld
 
 TAssertEnd
 

@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-04-26.
-" @Revision:    0.3.46
+" @Last Change: 2007-05-12.
+" @Revision:    0.4.70
 " vimscript:    1863
 "
 " This is just a stub. See ../autoload/tlib.vim for the actual file.
@@ -12,9 +12,38 @@
 if &cp || exists("loaded_tlib")
     finish
 endif
-let loaded_tlib = 3
+if v:version < 700 "{{{2
+    echoerr "tlib requires Vim >= 7"
+    finish
+endif
+let loaded_tlib = 4
 
-if !exists('g:tlib_pick_last_item')| let g:tlib_pick_last_item = 1 | endif
+if !exists('g:tlib_pick_last_item') | let g:tlib_pick_last_item = 1 | endif
+
+if !exists('g:tlib_numeric_chars')
+    let g:tlib_numeric_chars = {
+                \ 48: 48,
+                \ 49: 48,
+                \ 50: 48,
+                \ 51: 48,
+                \ 52: 48,
+                \ 53: 48,
+                \ 54: 48,
+                \ 55: 48,
+                \ 56: 48,
+                \ 57: 48,
+                \ 176: 176,
+                \ 177: 176,
+                \ 178: 176,
+                \ 179: 176,
+                \ 180: 176,
+                \ 181: 176,
+                \ 182: 176,
+                \ 183: 176,
+                \ 184: 176,
+                \ 185: 176,
+                \}
+endif
 
 
 finish
@@ -43,6 +72,20 @@ Initial release
 'i', the list index + 1 is returned, not the element
 
 0.3
-- Show feedback in statusline instead of the echo area
+- tlib#InputList(): Show feedback in statusline instead of the echo area
 - tlib#GetVar(), tlib#GetValue()
+
+0.4
+- tlib#InputList(): Up/Down keys wrap around list
+- tlib#InputList(): FIX: Problem when reducing the filter & using AND
+- tlib#InputList(): Made <a-numeric> work (can be configured via 
+- tlib#InputList(): special display_format: "filename"
+- tlib#Object: experimental support for some kind of OOP
+- tlib#World: Extracted some functions from tlib.vim to tlib/World.vim
+- tlib#FileJoin(), tlib#FileSplit(), tlib#RelativeFilename()
+- tlib#Let()
+- tlib#EnsureDirectoryExists(dir)
+- tlib#DirName(dir)
+- tlib#DecodeURL(url), tlib#EncodeChar(char), tlib#EncodeURL(url)
+- FIX: Problem when using shift-up/down with filtered lists
 

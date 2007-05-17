@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-05-08.
-" @Revision:    0.1.22
+" @Last Change: 2007-05-17.
+" @Revision:    0.1.25
 
 if &cp || exists("loaded_tlib_world_autoload")
     finish
@@ -115,6 +115,15 @@ function! s:prototype.ReduceFilter() dict "{{{3
         call remove(self.filter[0], 0)
     else
         let self.filter[0][0] = self.filter[0][0][0:-2]
+    endif
+endf
+
+function! s:prototype.PopFilter() dict "{{{3
+    " TLogVAR self.filter
+    if len(self.filter) == 1
+        let self.filter[0] = ['']
+    else
+        call remove(self.filter, 0)
     endif
 endf
 

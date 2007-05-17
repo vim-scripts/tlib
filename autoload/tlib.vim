@@ -3,13 +3,14 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-05-12.
-" @Revision:    1214
+" @Last Change: 2007-05-17.
+" @Revision:    1266
 " vimscript:    1863
 "
 " TODO:
 " - tlib#InputList() shouldn't take a list of handlers but an instance 
 "   of tlib#World as argument.
+" - General cache
 
 if &cp || exists("loaded_tlib_autoload") "{{{2
     finish
@@ -79,7 +80,7 @@ function! s:DisplayHelp(type, handlers) "{{{3
                 \ 'Help:',
                 \ 'Mouse        ... Pick an item            Letter       ... Filter the list',
                 \ 'Number       ... Pick an item            +, |         ... AND, OR',
-                \ 'Enter        ... Pick the current item   <bs>         ... Reduce filter',
+                \ 'Enter        ... Pick the current item   <bs>, <c-bs> ... Reduce filter',
                 \ '<c-r>        ... Reset the display       Up/Down      ... Next/previous item',
                 \ '<Esc>        ... Abort                   Page Up/Down ... Scroll',
                 \ '',
@@ -90,6 +91,7 @@ function! s:DisplayHelp(type, handlers) "{{{3
                     \ '#, <c-space> ... (Un)Select the current item',
                     \ '<c-a>        ... (Un)Select all currently visible items',
                     \ '<s-up/down>  ... (Un)Select items',
+                    \ '<c-\>        ... Show only selected',
                     \ ]
     endif
     for handler in a:handlers
@@ -120,6 +122,7 @@ endf
 " s:DisplayList(world, type, handlers, query, ?list)
 function! s:DisplayList(world, type, handlers, query, ...) "{{{3
     " TLogVAR a:query
+    " TLogVAR a:world.state
     let list = a:0 >= 1 ? a:1 : []
     call tlib#UseScratch(a:world)
     if a:world.state == 'scroll'
@@ -128,37 +131,32 @@ function! s:DisplayList(world, type, handlers, query, ...) "{{{3
         call s:DisplayHelp(a:type, a:handlers)
     else
         let ll = len(list)
+        let x  = len(ll) + 1
         " TLogVAR ll
-        if a:world.state != '\<display\>'
+        if a:world.state =~ '\<display\>'
             norm! ggdG
             let w = &co - &fdc - 1
             call append(0, map(copy(list), 'printf("%-'. w .'.'. w .'s", substitute(v:val, ''[[:cntrl:][:space:]]'', " ", "g"))'))
             " call append(0, a:query)
             norm! Gddgg
-            let resize  = get(a:world, 'resize', 0)
-            " TLogVAR resize
-            exec 'resize '. (resize == 0 ? ll : min([ll, resize]))
+            " if a:world.state !~ '\<redisplay\>'
+                let resize  = get(a:world, 'resize', 0)
+                " TLogVAR resize
+                exec 'resize '. (resize == 0 ? ll : min([ll, resize]))
+            " endif
         endif
-        let x = len(ll) + 1
-        " for idx in keys(b:tlibDisplayListMarks)
-        "     if index(a:world.sel_idx, idx) == -1
-        "         unlet b:tlibDisplayListMarks[idx]
-        "         call s:DisplayListMark(x, idx, ":")
-        "     endif
-        " endfor
-        " for idx in a:world.sel_idx
-        "     if !has_key(b:tlibDisplayListMarks, idx) || b:tlibDisplayListMarks[idx] != '#'
-        "         call s:DisplayListMark(x, idx, "#")
-        "         let b:tlibDisplayListMarks[idx] = '#'
-        "     endif
-        " endfor
-        " let b:tlibDisplayListMarks[a:world.prefidx] = '*'
-        " call s:DisplayListMark(x, a:world.prefidx, "*")
-        call filter(b:tlibDisplayListMarks, 'index(a:world.sel_idx, v:val) == -1')
-        call map(b:tlibDisplayListMarks, 's:DisplayListMark(a:world, x, v:val[0], ":")')
+        let base_pref = a:world.GetBaseIdx(a:world.prefidx)
+        if a:world.state =~ '\<redisplay\>'
+            call filter(b:tlibDisplayListMarks, 'index(a:world.sel_idx, v:val) == -1 && v:val != base_pref')
+            " TLogVAR b:tlibDisplayListMarks
+            call map(b:tlibDisplayListMarks, 's:DisplayListMark(a:world, x, v:val, ":")')
+            " let b:tlibDisplayListMarks = map(copy(a:world.sel_idx), 's:DisplayListMark(a:world, x, v:val, "#")')
+            " call add(b:tlibDisplayListMarks, a:world.prefidx)
+            " call s:DisplayListMark(a:world, x, a:world.GetBaseIdx(a:world.prefidx), '*')
+        endif
         let b:tlibDisplayListMarks = map(copy(a:world.sel_idx), 's:DisplayListMark(a:world, x, v:val, "#")')
-        call add(b:tlibDisplayListMarks, a:world.prefidx)
-        call s:DisplayListMark(a:world, x, a:world.GetBaseIdx(a:world.prefidx), '*')
+        call add(b:tlibDisplayListMarks, base_pref)
+        call s:DisplayListMark(a:world, x, base_pref, '*')
         exec 'norm! '. a:world.offset .'zt'
         let &statusline = a:query
     endif
@@ -169,9 +167,12 @@ function! s:DisplayListMark(world, x, y, mark) "{{{3
     if a:x > 0 && a:y > 0
         " TLogDBG a:x .'x'. a:y .' '. a:mark
         let sy = a:world.GetListIdx(a:y) + 1
-        call setpos('.', [0, sy, a:x, 0])
-        exec 'norm! r'. a:mark
-        " exec 'norm! '. a:y .'gg'. a:x .'|r'. a:mark
+        " TLogVAR sy
+        if sy >= 1
+            call setpos('.', [0, sy, a:x, 0])
+            exec 'norm! r'. a:mark
+            " exec 'norm! '. a:y .'gg'. a:x .'|r'. a:mark
+        endif
     endif
     return a:y
 endf
@@ -327,6 +328,13 @@ function! s:AgentReduceFilter(world, selected) "{{{3
     return a:world
 endf
 
+function! s:AgentPopFilter(world, selected) "{{{3
+    call a:world.PopFilter()
+    let a:world.offset = 1
+    let a:world.state = 'display'
+    return a:world
+endf
+
 function! s:AgentDebug(world, selected) "{{{3
     " echo string(world.state)
     echo string(a:world.filter)
@@ -378,7 +386,7 @@ endf
 "     <+TBD+>
 " endf
 
-fun! s:DisplayFormat(file)
+function! s:DisplayFormat(file)
     let fname = fnamemodify(a:file, ":t")
     if isdirectory(a:file)
         let fname .='/'
@@ -434,6 +442,10 @@ function! tlib#InputList(type, query, list, ...) "{{{3
                 \ 43:            function('s:AgentAND'),
                 \ "\<bs>":       function('s:AgentReduceFilter'),
                 \ "\<del>":      function('s:AgentReduceFilter'),
+                \ "\<c-bs>":     function('s:AgentPopFilter'),
+                \ "\<m-bs>":     function('s:AgentPopFilter'),
+                \ "\<c-del>":    function('s:AgentPopFilter'),
+                \ "\<m-del>":    function('s:AgentPopFilter'),
                 \ 191:           function('s:AgentDebug'),
                 \ }
     if stridx(a:type, 'm') != -1
@@ -777,7 +789,7 @@ endf
 
 
 """ Variables {{{1
-fun! tlib#Let(name, val)
+function! tlib#Let(name, val)
     if !exists(a:name)
         " exec "let ". a:name ."='". a:val ."'"
         " exec 'let '. a:name .'="'. escape(a:val, '"\') .'"'
@@ -806,6 +818,7 @@ function! tlib#GetVar(var, namespace, ...) "{{{3
     let default = a:0 >= 1 ? a:1 : ''
     return join(pre) . string(default) . join(post)
 endf
+
 
 
 """ Command line {{{1
@@ -883,7 +896,7 @@ endf
 
 """ URLs {{{1
 " These functions could use printf() now.
-fun! tlib#DecodeURL(url)
+function! tlib#DecodeURL(url)
     let rv = ''
     let n  = 0
     let m  = strlen(a:url)
@@ -906,7 +919,7 @@ fun! tlib#DecodeURL(url)
     return rv
 endf
 
-fun! tlib#EncodeChar(char)
+function! tlib#EncodeChar(char)
     if a:char == '%'
         return '%%'
     elseif a:char == ' '
@@ -923,10 +936,58 @@ fun! tlib#EncodeChar(char)
     endif
 endf
 
-fun! tlib#EncodeURL(url)
+function! tlib#EncodeURL(url)
     return substitute(a:url, '\([^a-zA-Z0-9_.-]\)', '\=EncodeChar(submatch(1))', 'g')
 endf
 
+
+
+finish
+-----------------------------------------------------------------------
+This library provides some utility functions. There isn't much need to 
+install it unless another plugin requires you to do so.
+
+tlib#InputList(type, query, list)
+    Select items from a list that can be filtered using a regexp and 
+    does some other tricks. The goal of the function is to let you 
+    select items from a list with only a few keystrokes. The function 
+    can be used to select a single item or multiple items.
+
+tlib#EditList(query, list)
+    Edit items in a list. Return the modified list.
+
+
+CHANGES:
+0.1
+Initial release
+
+0.2
+- More list convenience functions
+- tlib#EditList()
+- tlib#InputList(): properly handle duplicate items; it type contains 
+'i', the list index + 1 is returned, not the element
+
+0.3
+- tlib#InputList(): Show feedback in statusline instead of the echo area
+- tlib#GetVar(), tlib#GetValue()
+
+0.4
+- tlib#InputList(): Up/Down keys wrap around list
+- tlib#InputList(): FIX: Problem when reducing the filter & using AND
+- tlib#InputList(): Made <a-numeric> work (can be configured via 
+- tlib#InputList(): special display_format: "filename"
+- tlib#Object: experimental support for some kind of OOP
+- tlib#World: Extracted some functions from tlib.vim to tlib/World.vim
+- tlib#FileJoin(), tlib#FileSplit(), tlib#RelativeFilename()
+- tlib#Let()
+- tlib#EnsureDirectoryExists(dir)
+- tlib#DirName(dir)
+- tlib#DecodeURL(url), tlib#EncodeChar(char), tlib#EncodeURL(url)
+- FIX: Problem when using shift-up/down with filtered lists
+
+0.5
+- tlib#InputList(): FIX: Selecting items in filtered view
+- tlib#InputList(): <c-bs>: Remove last AND pattern from filter
 
 
 " vi: fdm=marker

@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-05-17.
-" @Revision:    0.1.25
+" @Last Change: 2007-05-23.
+" @Revision:    0.1.31
 
 if &cp || exists("loaded_tlib_world_autoload")
     finish
@@ -35,6 +35,11 @@ endf
 
 function! s:prototype.SelectItem(mode, index) dict "{{{3
     let bi = self.GetBaseIdx(a:index)
+    " if self.RespondTo('MaySelectItem')
+    "     if !self.MaySelectItem(bi)
+    "         return 0
+    "     endif
+    " endif
     " TLogVAR bi
     let si = index(self.sel_idx, bi)
     " TLogVAR self.sel_idx
@@ -44,6 +49,7 @@ function! s:prototype.SelectItem(mode, index) dict "{{{3
     elseif a:mode == 'toggle'
         call remove(self.sel_idx, si)
     endif
+    return 1
 endf
 
 function! s:prototype.FormatArgs(format_string, arg) dict "{{{3
@@ -64,7 +70,11 @@ function! s:prototype.GetListIdx(baseidx) dict "{{{3
 endf
 
 function! s:prototype.GetBaseIdx(idx) dict "{{{3
-    return self.table[a:idx - 1]
+    if !empty(self.table) && a:idx > 0
+        return self.table[a:idx - 1]
+    else
+        return ''
+    endif
 endf
 
 function! s:prototype.GetBaseItem(idx) dict "{{{3

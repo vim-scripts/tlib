@@ -3,14 +3,15 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-05-17.
-" @Revision:    1266
+" @Last Change: 2007-05-23.
+" @Revision:    1340
 " vimscript:    1863
 "
 " TODO:
 " - tlib#InputList() shouldn't take a list of handlers but an instance 
 "   of tlib#World as argument.
-" - General cache
+" - tlib#InputList(): Speed up with large lists (n > 1000)
+" - tlib#Args(dictionary)
 
 if &cp || exists("loaded_tlib_autoload") "{{{2
     finish
@@ -91,8 +92,8 @@ function! s:DisplayHelp(type, handlers) "{{{3
                     \ '#, <c-space> ... (Un)Select the current item',
                     \ '<c-a>        ... (Un)Select all currently visible items',
                     \ '<s-up/down>  ... (Un)Select items',
-                    \ '<c-\>        ... Show only selected',
                     \ ]
+                    " \ '<c-\>        ... Show only selected',
     endif
     for handler in a:handlers
         let key = get(handler, 'key_name', '')
@@ -145,7 +146,9 @@ function! s:DisplayList(world, type, handlers, query, ...) "{{{3
                 exec 'resize '. (resize == 0 ? ll : min([ll, resize]))
             " endif
         endif
+        " TLogVAR a:world.prefidx
         let base_pref = a:world.GetBaseIdx(a:world.prefidx)
+        " TLogVAR base_pref
         if a:world.state =~ '\<redisplay\>'
             call filter(b:tlibDisplayListMarks, 'index(a:world.sel_idx, v:val) == -1 && v:val != base_pref')
             " TLogVAR b:tlibDisplayListMarks
@@ -164,7 +167,8 @@ function! s:DisplayList(world, type, handlers, query, ...) "{{{3
 endf
 
 function! s:DisplayListMark(world, x, y, mark) "{{{3
-    if a:x > 0 && a:y > 0
+    " TLogVAR a:y, a:mark
+    if a:x > 0 && a:y >= 0
         " TLogDBG a:x .'x'. a:y .' '. a:mark
         let sy = a:world.GetListIdx(a:y) + 1
         " TLogVAR sy
@@ -449,7 +453,7 @@ function! tlib#InputList(type, query, list, ...) "{{{3
                 \ 191:           function('s:AgentDebug'),
                 \ }
     if stridx(a:type, 'm') != -1
-        let key_agents["\<c-space>"] = function('s:AgentSelect')
+        " let key_agents["\<c-space>"] = function('s:AgentSelect')
         let key_agents[35] =           function('s:AgentSelect')
         let key_agents["\<s-up>"] =    function('s:AgentSelectUp')
         let key_agents["\<s-down>"] =  function('s:AgentSelectDown')
@@ -501,12 +505,15 @@ function! tlib#InputList(type, query, list, ...) "{{{3
                     let world.offset = 1
                 endif
 
+                " TLogDBG 1
                 " TLogVAR world.state
                 if world.state =~ 'display'
                     if world.state =~ '^display'
                         let world.table = filter(range(1, len(world.base)), 'world.MatchBaseIdx(filter_format, v:val)')
+                        " TLogDBG 2
                         " TLogVAR world.table
                         let world.list  = map(copy(world.table), 'world.GetBaseItem(v:val)')
+                        " TLogDBG 3
                         let llen = len(world.list)
                         if llen == 0 && !show_empty
                             call world.ReduceFilter()
@@ -524,8 +531,9 @@ function! tlib#InputList(type, query, list, ...) "{{{3
                                 let world.last_item = ''
                             endif
                         endif
+                        " TLogDBG 4
                         if world.state == 'display'
-                            if world.idx == '' && !world.FilterIsEmpty()
+                            if world.idx == '' && llen < g:tlib_sortprefs_threshold && !world.FilterIsEmpty()
                                 let s:world = world
                                 let pref    = sort(range(1, llen), 's:SortPrefs')
                                 let world.prefidx = get(pref, 0, 1)
@@ -533,19 +541,24 @@ function! tlib#InputList(type, query, list, ...) "{{{3
                                 let world.prefidx = world.idx == '' ? 1 : world.idx
                             endif
                         endif
+                        " TLogDBG 5
                         let dlist = copy(world.list)
                         if !empty(display_format)
                             call map(dlist, 'eval(call(function("printf"), world.FormatArgs(display_format, v:val)))')
                         endif
                         " TLogVAR world.prefidx
+                        " TLogDBG 6
                         let dlist = map(range(1, llen), 'printf("%0'. len(llen) .'d", v:val) .": ". dlist[v:val - 1]')
                     endif
+                    " TLogDBG 7
                     if world.prefidx > world.offset + winheight(0) - 1
                         let world.offset = world.prefidx - winheight(0) + 1
                     elseif world.prefidx < world.offset
                         let world.offset = world.prefidx
                     endif
+                    " TLogDBG 8
                     call s:DisplayList(world, a:type, handlers, a:query .' (filter: '. world.DisplayFilter() .'; press "?" for help)', dlist)
+                    " TLogDBG 9
                     let world.state = ''
 
                 else
@@ -705,7 +718,7 @@ function! tlib#EditListHandlers() "{{{3
     return [
                 \ {'key': 5, 'agent': s:SNR() .'AgentEditItem',    'key_name': '<c-e>', 'help': 'Edit item'},
                 \ {'key': 4, 'agent': s:SNR() .'AgentDeleteItems', 'key_name': '<c-d>', 'help': 'Delete item(s)'},
-                \ {'key': 14, 'agent': s:SNR() .'AgentNewItem', 'key_name': '<c-n>', 'help': 'New item'},
+                \ {'key': 14, 'agent': s:SNR() .'AgentNewItem',    'key_name': '<c-n>', 'help': 'New item'},
                 \ {'pick_last_item': 0},
                 \ {'return_agent': s:SNR() .'AgentEditReturnValue'},
                 \ ]
@@ -797,6 +810,25 @@ function! tlib#Let(name, val)
     endif
 endf
 
+" tlib#GetArg(var, n, ?default="", ?test='')
+function! tlib#GetArg(n, var, ...) "{{{3
+    let default = a:0 >= 1 ? a:1 : ''
+    let atest   = a:0 >= 2 ? a:2 : ''
+    if !empty(atest)
+        let atest = ' && (a:'. a:n .' '. atest .')'
+    endif
+    let test = printf('a:0 >= %d', a:n) . atest
+    return printf('let %s = %s ? a:%d : %s', a:var, test, a:n, string(default))
+endf
+
+" tlib#Args(list, ?default='')
+function! tlib#Args(list, ...) "{{{3
+    let default = a:0 >= 1 ? a:1 : ''
+    let list = map(copy(a:list), 'type(v:val) == 3 ? v:val : [v:val, default]')
+    let args = map(range(1, len(list)), 'call("tlib#GetArg", [v:val] + list[v:val - 1])')
+    return join(args, ' | ')
+endf
+
 function! tlib#GetValue(var, namespace, ...) "{{{3
     for namespace in split(a:namespace, '\zs')
         let var = namespace .':'. a:var
@@ -817,6 +849,37 @@ function! tlib#GetVar(var, namespace, ...) "{{{3
     endfor
     let default = a:0 >= 1 ? a:1 : ''
     return join(pre) . string(default) . join(post)
+endf
+
+function! tlib#EvalInBuffer(buffer, code) "{{{3
+    let cb = bufnr('%')
+    let wb = bufwinnr('%')
+    " TLogVAR cb
+    let sn = bufnr(a:buffer)
+    let sb = sn != cb
+    let lazyredraw = &lazyredraw
+    set lazyredraw
+    if sb
+        let ws = bufwinnr(sn)
+        if ws != -1
+            try
+                exec ws.'wincmd w'
+                exec a:code
+            finally
+                exec wb.'wincmd w'
+            endtry
+        else
+            try
+                silent exec 'sbuffer! '. sn
+                exec a:code
+            finally
+                wincmd c
+            endtry
+        endif
+    else
+        exec a:code
+    endif
+    let &lazyredraw = lazyredraw
 endf
 
 
@@ -890,6 +953,49 @@ function! tlib#EnsureDirectoryExists(dir) "{{{3
         return mkdir(a:dir, 'p')
     endif
     return 1
+endf
+
+function! tlib#MyRuntimeDir() "{{{3
+    return get(split(&rtp, ','), 0)
+endf
+
+function! tlib#GetCacheName(type, ...) "{{{3
+    let file  = a:0 >= 1 && !empty(a:1) ? a:1 : expand('%:p')
+    let mkdir = a:0 >= 2 ? a:2 : 0
+    let dir   = tlib#MyRuntimeDir()
+    let file  = tlib#RelativeFilename(file, dir)
+    let file  = substitute(file, '\.\.\|[:&<>]\|//\+\|\\\\\+', '_', 'g')
+    let dir   = tlib#FileJoin([dir, 'cache', a:type, fnamemodify(file, ':h')])
+    let file  = fnamemodify(file, ':t')
+    " TLogVAR dir
+    " TLogVAR file
+    if mkdir && !isdirectory(dir)
+        call mkdir(dir, 'p')
+    endif
+    retur tlib#FileJoin([dir, file])
+endf
+
+function! tlib#CacheSave(cfile, dictionary) "{{{3
+    call writefile([string(a:dictionary)], a:cfile, 'b')
+endf
+
+function! tlib#CacheGet(cfile) "{{{3
+    if filereadable(a:cfile)
+        let val = readfile(a:cfile, 'b')
+        return eval(join(val, "\n"))
+    else
+        return {}
+    endif
+endf
+
+
+
+""" Strings {{{1
+function! tlib#RemoveBackslashes(text, ...) "{{{3
+    exec tlib#GetArg(1, 'chars', ' ')
+    " TLogVAR chars
+    let rv = substitute(a:text, '\\\(['. chars .']\)', '\1', 'g')
+    return rv
 endf
 
 
@@ -989,5 +1095,14 @@ Initial release
 - tlib#InputList(): FIX: Selecting items in filtered view
 - tlib#InputList(): <c-bs>: Remove last AND pattern from filter
 
+0.6
+- tlib#InputList(): Disabled <c-space> map
+- tlib#InputList(): try to be smart about user itentions only if a 
+list's length is < g:tlib_sortprefs_threshold (default: 200)
+- tlib#Object: Super() method
+- tlib#MyRuntimeDir()
+- tlib#GetCacheName(), tlib#CacheSave(), tlib#CacheGet()
+- tlib#Args(), tlib#GetArg()
+- FIX: tlib#InputList(): Display problem with first item
 
 " vi: fdm=marker

@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2006-12-17.
-" @Last Change: 2007-05-01.
-" @Revision:    55
+" @Last Change: 2007-05-22.
+" @Revision:    76
 
 TAssertBegin! "tlib", 'autoload/tlib.vim'
 
@@ -80,9 +80,66 @@ let test1 = tlib#Test#New()
 TAssert test.IsRelated(test1)
 let testworld = tlib#World#New()
 TAssert !test.IsRelated(testworld)
-unlet test test1 testworld
 
-TAssertEnd
+let testc = tlib#TestChild#New()
+TAssert IsEqual(testc.Dummy(), 'TestChild.vim')
+TAssert IsEqual(testc.Super('Dummy', []), 'Test.vim')
+
+
+function! TestGetArg(...) "{{{3
+    exec tlib#GetArg(1, 'foo', 1)
+    return foo
+endf
+
+function! TestGetArg1(...) "{{{3
+    exec tlib#GetArg(1, 'foo', 1, '!= ""')
+    return foo
+endf
+
+TAssert IsEqual(TestGetArg(), 1)
+TAssert IsEqual(TestGetArg(''), '')
+TAssert IsEqual(TestGetArg(2), 2)
+TAssert IsEqual(TestGetArg1(), 1)
+TAssert IsEqual(TestGetArg1(''), 1)
+TAssert IsEqual(TestGetArg1(2), 2)
+
+function! TestArgs(...) "{{{3
+    exec tlib#Args([['foo', "o"], ['bar', 2]])
+    return repeat(foo, bar)
+endf
+TAssert IsEqual(TestArgs(), 'oo')
+TAssert IsEqual(TestArgs('a'), 'aa')
+TAssert IsEqual(TestArgs('a', 3), 'aaa')
+
+function! TestArgs1(...) "{{{3
+    exec tlib#Args(['foo', ['bar', 2]])
+    return repeat(foo, bar)
+endf
+TAssert IsEqual(TestArgs1(), '')
+TAssert IsEqual(TestArgs1('a'), 'aa')
+TAssert IsEqual(TestArgs1('a', 3), 'aaa')
+
+function! TestArgs2(...) "{{{3
+    exec tlib#Args(['foo', 'bar'], 1)
+    return repeat(foo, bar)
+endf
+TAssert IsEqual(TestArgs2(), '1')
+TAssert IsEqual(TestArgs2('a'), 'a')
+TAssert IsEqual(TestArgs2('a', 3), 'aaa')
+
+delfunction TestGetArg
+delfunction TestGetArg1
+delfunction TestArgs
+delfunction TestArgs1
+
+TAssertEnd test test1 testc testworld
+
+
+TAssert IsString(tlib#RemoveBackslashes('foo bar'))
+TAssert IsEqual(tlib#RemoveBackslashes('foo bar'), 'foo bar')
+TAssert IsEqual(tlib#RemoveBackslashes('foo\ bar'), 'foo bar')
+TAssert IsEqual(tlib#RemoveBackslashes('foo\ \\bar'), 'foo \\bar')
+TAssert IsEqual(tlib#RemoveBackslashes('foo\ \\bar', '\ '), 'foo \bar')
 
 
 finish

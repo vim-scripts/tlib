@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-05-23.
-" @Revision:    0.1.31
+" @Last Change: 2007-06-20.
+" @Revision:    0.1.54
 
 if &cp || exists("loaded_tlib_world_autoload")
     finish
@@ -58,7 +58,7 @@ function! s:prototype.FormatArgs(format_string, arg) dict "{{{3
 endf
 
 function! s:prototype.GetRx(filter) "{{{3
-    return '\('. join(a:filter, '\|') .'\)' 
+    return '\('. join(filter(copy(a:filter), 'v:val[0] != "!"'), '\|') .'\)' 
 endf
 
 function! s:prototype.GetItem(idx) dict "{{{3
@@ -100,10 +100,20 @@ endf
 
 function! s:prototype.Match(text, ...) dict "{{{3
     let mrx = '\V'. (a:0 >= 1 && a:1 ? '\C' : '')
-    for rx in self.filter
-        if a:text !~ mrx. self.GetRx(rx)
+    for filter in self.filter
+        " TLogVAR filter
+        let rx = join(reverse(filter(copy(filter), '!empty(v:val)')), '\|')
+        " TLogVAR rx
+        if rx[0] == '!'
+            if len(rx) > 1 && a:text =~ mrx .'\('. rx[1:-1] .'\)'
+                return 0
+            endif
+        elseif a:text !~ mrx .'\('. rx .'\)'
             return 0
         endif
+        " if a:text !~ mrx. self.GetRx(filter)
+        "     return 0
+        " endif
     endfor
     return 1
 endf
@@ -130,10 +140,12 @@ endf
 
 function! s:prototype.PopFilter() dict "{{{3
     " TLogVAR self.filter
-    if len(self.filter) == 1
-        let self.filter[0] = ['']
-    else
+    if len(self.filter[0]) > 1
+        call remove(self.filter[0], 0)
+    elseif len(self.filter) > 1
         call remove(self.filter, 0)
+    else
+        let self.filter[0] = ['']
     endif
 endf
 

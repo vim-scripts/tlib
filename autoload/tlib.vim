@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-05-23.
-" @Revision:    1340
+" @Last Change: 2007-06-20.
+" @Revision:    1409
 " vimscript:    1863
 "
 " TODO:
@@ -79,11 +79,12 @@ endf
 function! s:DisplayHelp(type, handlers) "{{{3
     let help = [
                 \ 'Help:',
-                \ 'Mouse        ... Pick an item            Letter       ... Filter the list',
-                \ 'Number       ... Pick an item            +, |         ... AND, OR',
-                \ 'Enter        ... Pick the current item   <bs>, <c-bs> ... Reduce filter',
-                \ '<c-r>        ... Reset the display       Up/Down      ... Next/previous item',
-                \ '<Esc>        ... Abort                   Page Up/Down ... Scroll',
+                \ 'Mouse  ... Pick an item             Letter       ... Filter the list',
+                \ 'Number ... Pick an item             +, |, !      ... AND, OR, (NOT)',
+                \ 'Enter  ... Pick the current item    <bs>, <c-bs> ... Reduce filter',
+                \ '<c-r>  ... Reset the display        Up/Down      ... Next/previous item',
+                \ '<c-q>  ... Edit top filter string   Page Up/Down ... Scroll',
+                \ '<c-z>  ... Suspend/Resume           <Esc>        ... Abort',
                 \ '',
                 \ ]
 
@@ -110,7 +111,7 @@ function! s:DisplayHelp(type, handlers) "{{{3
                 \ 'Note on filtering:',
                 \ 'The filter is prepended with "\V". Basically, filtering is case-insensitive.',
                 \ 'Letters at word boundaries or upper-case lettes in camel-case names is given',
-                \ 'more weight.',
+                \ 'more weight. If an OR-joined pattern start with "!", matches will be excluded.',
                 \ '',
                 \ 'Press any key to continue.',
                 \ ]
@@ -296,12 +297,38 @@ function! s:AgentReset(world, selected) "{{{3
     return a:world
 endf
 
+function! s:AgentInput(world, selected) "{{{3
+    let flt0 = a:world.filter[0][0]
+    let flt1 = input('Filter: ', flt0)
+    echo
+    if flt1 != flt0 && !empty(flt1)
+        let a:world.filter[0][0] = flt1
+    endif
+    let a:world.state = 'display'
+    return a:world
+endf
+
 function! s:AgentExit(world, selected) "{{{3
     let a:world.state = 'exit escape'
     let a:world.list = []
     " let a:world.base = []
     call a:world.ResetSelected()
     return a:world
+endf
+
+function! s:AgentSuspend(world, selected) "{{{3
+    let bn = bufnr('.')
+    let wn = bufwinnr(bn)
+    exec 'noremap <buffer> <c-z> :call <SID>Resume("world", '. bn .', '. wn .')<cr>'
+    let s:tlib_world = a:world
+    let a:world.state = 'exit suspend'
+    return a:world
+endf
+
+function! s:Resume(name, bn, wn) "{{{3
+    echo
+    let s:tlib_{a:name}.state = 'display'
+    call tlib#InputList('resume '. a:name)
 endf
 
 function! s:AgentHelp(world, selected) "{{{3
@@ -391,10 +418,11 @@ endf
 " endf
 
 function! s:DisplayFormat(file)
-    let fname = fnamemodify(a:file, ":t")
-    if isdirectory(a:file)
-        let fname .='/'
-    endif
+    let fname = fnamemodify(a:file, ":p:t")
+    " let fname = fnamemodify(a:file, ":t")
+    " if isdirectory(a:file)
+    "     let fname .='/'
+    " endif
     let dname = fnamemodify(a:file, ":h")
     let dnmax = &co - max([20, len(fname)]) - 12 - &fdc
     if len(dname) > dnmax
@@ -410,12 +438,32 @@ endf
 "     Esc    ... Abort
 "     Enter  ... Select preferred item
 " tlib#InputList(type. query, list, ?handlers=[], ?default="", ?timeout=0)
-function! tlib#InputList(type, query, list, ...) "{{{3
-    let handlers = a:0 >= 1 ? a:1 : []
-    let rv       = a:0 >= 2 ? a:2 : ''
-    let timeout  = a:0 >= 3 ? a:3 : 0
+" function! tlib#InputList(type, query, list, ...) "{{{3
+function! tlib#InputList(type, ...) "{{{3
+    exec tlib#Args([
+        \ ['query', ''],
+        \ ['list', []],
+        \ ['handlers', []],
+        \ ['rv', ''],
+        \ ['timeout', 0],
+        \ ])
+    " let handlers = a:0 >= 1 ? a:1 : []
+    " let rv       = a:0 >= 2 ? a:2 : ''
+    " let timeout  = a:0 >= 3 ? a:3 : 0
     let backchar = ["\<bs>", "\<del>"]
-    let wnr      = winnr()
+
+    if a:type =~ '^resume'
+        let world = s:tlib_{matchstr(a:type, ' \zs.\+')}
+        let [_, query, list, handlers, rv, timeout] = world.arguments
+    else
+        let world = tlib#World#New({
+                    \ 'type': a:type,
+                    \ 'base': list,
+                    \ 'wnr': winnr(),
+                    \ 'query': query,
+                    \ 'arguments': [a:type, query, list, handlers, rv, timeout],
+                    \ })
+    endif
 
     let state_handlers   = filter(copy(handlers), 'has_key(v:val, "state")')
     let post_handlers    = filter(copy(handlers), 'has_key(v:val, "postprocess")')
@@ -427,6 +475,9 @@ function! tlib#InputList(type, query, list, ...) "{{{3
     let filter_format    = tlib#Find(handlers, 'has_key(v:val, "filter_format")', '', 'v:val.filter_format')
     let return_agent     = tlib#Find(handlers, 'has_key(v:val, "return_agent")')
     let resize_value     = tlib#Find(handlers, 'has_key(v:val, "resize")')
+    if !empty(resize_value) && a:type !~ '^resume'
+        let world.resize = resize_value.resize
+    endif
     let show_empty       = tlib#Find(handlers, 'has_key(v:val, "show_empty")', 0, 'v:val.show_empty')
     let pick_last_item   = tlib#Find(handlers, 'has_key(v:val, "pick_last_item")', 
                 \ tlib#GetValue('tlib_pick_last_item', 'bg'), 'v:val.pick_last_item')
@@ -439,7 +490,9 @@ function! tlib#InputList(type, query, list, ...) "{{{3
                 \ "\<Up>":       function('s:AgentUp'),
                 \ "\<Down>":     function('s:AgentDown'),
                 \ 18:            function('s:AgentReset'),
+                \ 17:            function('s:AgentInput'),
                 \ 27:            function('s:AgentExit'),
+                \ 26:            function('s:AgentSuspend'),
                 \ 63:            function('s:AgentHelp'),
                 \ "\<F1>":       function('s:AgentHelp'),
                 \ 124:           function('s:AgentOR'),
@@ -452,7 +505,7 @@ function! tlib#InputList(type, query, list, ...) "{{{3
                 \ "\<m-del>":    function('s:AgentPopFilter'),
                 \ 191:           function('s:AgentDebug'),
                 \ }
-    if stridx(a:type, 'm') != -1
+    if stridx(world.type, 'm') != -1
         " let key_agents["\<c-space>"] = function('s:AgentSelect')
         let key_agents[35] =           function('s:AgentSelect')
         let key_agents["\<s-up>"] =    function('s:AgentSelectUp')
@@ -470,12 +523,8 @@ function! tlib#InputList(type, query, list, ...) "{{{3
     let &laststatus = 2
 
     try
-        let world = tlib#World#New({'type': a:type, 'base': a:list})
-        if !empty(resize_value)
-            let world.resize = resize_value.resize
-        endif
-
         while !empty(world.state) && world.state !~ '^exit' && (show_empty || !empty(world.base))
+            " TLogDBG 'while'
             " TLogVAR world.state
             try
                 for handler in state_handlers
@@ -493,6 +542,7 @@ function! tlib#InputList(type, query, list, ...) "{{{3
                 endfor
 
                 if world.state == 'reset'
+                    " TLogDBG 'reset'
                     call world.Reset()
                     continue
                 endif
@@ -557,7 +607,7 @@ function! tlib#InputList(type, query, list, ...) "{{{3
                         let world.offset = world.prefidx
                     endif
                     " TLogDBG 8
-                    call s:DisplayList(world, a:type, handlers, a:query .' (filter: '. world.DisplayFilter() .'; press "?" for help)', dlist)
+                    call s:DisplayList(world, world.type, handlers, world.query .' (filter: '. world.DisplayFilter() .'; press "?" for help)', dlist)
                     " TLogDBG 9
                     let world.state = ''
 
@@ -565,7 +615,7 @@ function! tlib#InputList(type, query, list, ...) "{{{3
                     if world.state == 'scroll'
                         let world.prefidx = world.offset
                     endif
-                    call s:DisplayList(world, a:type, handlers, '')
+                    call s:DisplayList(world, world.type, handlers, '')
                     if world.state == 'help'
                         let world.state = 'display'
                     else
@@ -615,11 +665,13 @@ function! tlib#InputList(type, query, list, ...) "{{{3
                 " echom 'Pick item #'. world.prefidx
 
             finally
-                if !empty(world.list) && !empty(world.base)
+                " TLogDBG 'finally 1'
+                if world.state =~ '\<suspend\>'
+                elseif !empty(world.list) && !empty(world.base)
                     " TLogVAR world.list
                     if empty(world.state)
                         " TLogVAR world.state
-                        if stridx(a:type, 'i') != -1
+                        if stridx(world.type, 'i') != -1
                             let rv = llen == 1 ? 1 : world.prefidx
                         else
                             if llen == 1
@@ -648,14 +700,16 @@ function! tlib#InputList(type, query, list, ...) "{{{3
             " TLogDBG 'state1='. world.state
         endwh
 
+        " TLogDBG 'exit while loop'
         " TLogVAR world.list
         " TLogVAR world.sel_idx
         " TLogVAR world.idx
         " TLogVAR world.prefidx
         " TLogVAR rv
-        if !empty(return_agent)
+        if world.state =~ '\<suspend\>'
+        elseif !empty(return_agent)
             return call(return_agent.return_agent, [world, rv])
-        elseif stridx(a:type, 'm') != -1
+        elseif stridx(world.type, 'm') != -1
             return world.GetSelectedItems(rv)
         else
             return rv
@@ -664,10 +718,13 @@ function! tlib#InputList(type, query, list, ...) "{{{3
     finally
         let &statusline = statusline
         let &laststatus = laststatus
-        call tlib#CloseScratch(world)
+        " TLogDBG 'finally 2'
+        if world.state !~ '\<suspend\>'
+            call tlib#CloseScratch(world)
+            exec world.wnr .'wincmd w'
+        endif
         echo
         redraw
-        exec wnr .'wincmd w'
     endtry
 endf
 
@@ -810,7 +867,7 @@ function! tlib#Let(name, val)
     endif
 endf
 
-" tlib#GetArg(var, n, ?default="", ?test='')
+" tlib#GetArg(n, var, ?default="", ?test='')
 function! tlib#GetArg(n, var, ...) "{{{3
     let default = a:0 >= 1 ? a:1 : ''
     let atest   = a:0 >= 2 ? a:2 : ''
@@ -959,6 +1016,7 @@ function! tlib#MyRuntimeDir() "{{{3
     return get(split(&rtp, ','), 0)
 endf
 
+" tlib#GetCacheName(type, ?file=%, ?mkdir=0)
 function! tlib#GetCacheName(type, ...) "{{{3
     let file  = a:0 >= 1 && !empty(a:1) ? a:1 : expand('%:p')
     let mkdir = a:0 >= 2 ? a:2 : 0
@@ -1104,5 +1162,16 @@ list's length is < g:tlib_sortprefs_threshold (default: 200)
 - tlib#GetCacheName(), tlib#CacheSave(), tlib#CacheGet()
 - tlib#Args(), tlib#GetArg()
 - FIX: tlib#InputList(): Display problem with first item
+
+0.7
+- tlib#InputList(): <c-z> ... Suspend/Resume input
+- tlib#InputList(): <c-q> ... Input text on the command line (useful on 
+slow systems when working with very large lists)
+- tlib#InputList(): AND-pattern starting with '!' will work as 'exclude 
+matches'
+- tlib#InputList(): FIX <c-bs> pop OR-patterns properly
+- tlib#InputList(): display_format == filename: don't add '/' to 
+directory names (avoid filesystem access)
+
 
 " vi: fdm=marker

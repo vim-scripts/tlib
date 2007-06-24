@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-06-20.
-" @Revision:    1409
+" @Last Change: 2007-06-24.
+" @Revision:    1432
 " vimscript:    1863
 "
 " TODO:
@@ -308,14 +308,6 @@ function! s:AgentInput(world, selected) "{{{3
     return a:world
 endf
 
-function! s:AgentExit(world, selected) "{{{3
-    let a:world.state = 'exit escape'
-    let a:world.list = []
-    " let a:world.base = []
-    call a:world.ResetSelected()
-    return a:world
-endf
-
 function! s:AgentSuspend(world, selected) "{{{3
     let bn = bufnr('.')
     let wn = bufwinnr(bn)
@@ -491,7 +483,7 @@ function! tlib#InputList(type, ...) "{{{3
                 \ "\<Down>":     function('s:AgentDown'),
                 \ 18:            function('s:AgentReset'),
                 \ 17:            function('s:AgentInput'),
-                \ 27:            function('s:AgentExit'),
+                \ 27:            'tlib#agent#Exit',
                 \ 26:            function('s:AgentSuspend'),
                 \ 63:            function('s:AgentHelp'),
                 \ "\<F1>":       function('s:AgentHelp'),
@@ -951,7 +943,7 @@ function! tlib#ExArg(arg, ...) "{{{3
 endf
 
 
-""" File names {{{1
+""" File related {{{1
 let g:tlibFileNameSeparator = '/'
 " let g:tlibFileNameSeparator = exists('+shellslash') && !&shellslash ? '\' : '/'
 
@@ -1018,6 +1010,10 @@ endf
 
 " tlib#GetCacheName(type, ?file=%, ?mkdir=0)
 function! tlib#GetCacheName(type, ...) "{{{3
+    " TLogDBG 'bufname='. bufname('.')
+    if empty(expand('%:t'))
+        return ''
+    endif
     let file  = a:0 >= 1 && !empty(a:1) ? a:1 : expand('%:p')
     let mkdir = a:0 >= 2 ? a:2 : 0
     let dir   = tlib#MyRuntimeDir()
@@ -1034,11 +1030,13 @@ function! tlib#GetCacheName(type, ...) "{{{3
 endf
 
 function! tlib#CacheSave(cfile, dictionary) "{{{3
-    call writefile([string(a:dictionary)], a:cfile, 'b')
+    if !empty(a:cfile)
+        call writefile([string(a:dictionary)], a:cfile, 'b')
+    endif
 endf
 
 function! tlib#CacheGet(cfile) "{{{3
-    if filereadable(a:cfile)
+    if !empty(a:cfile) && filereadable(a:cfile)
         let val = readfile(a:cfile, 'b')
         return eval(join(val, "\n"))
     else
@@ -1046,6 +1044,29 @@ function! tlib#CacheGet(cfile) "{{{3
     endif
 endf
 
+function! s:SetScrollBind(world) "{{{3
+    let sb = get(a:world, 'scrollbind', &scrollbind)
+    if sb != &scrollbind
+        let &scrollbind = sb
+    endif
+endf
+
+function! tlib#ExWithFiles(world, fcmd, bcmd, files) "{{{3
+    for f in a:files
+        let bn = bufnr(f)
+        if bn != -1
+            if !empty(a:bcmd)
+                exec a:bcmd .' '. bn
+                call s:SetScrollBind(a:world)
+            endif
+        elseif filereadable(f)
+            if !empty(a:fcmd)
+                exec a:fcmd .' '. escape(f, '%#\ ')
+                call s:SetScrollBind(a:world)
+            endif
+        endif
+    endfor
+endf
 
 
 """ Strings {{{1
@@ -1172,6 +1193,10 @@ matches'
 - tlib#InputList(): FIX <c-bs> pop OR-patterns properly
 - tlib#InputList(): display_format == filename: don't add '/' to 
 directory names (avoid filesystem access)
+
+0.8
+- FIX: Return empty cache name for buffers that have no files attached to it
+- Some re-arranging
 
 
 " vi: fdm=marker

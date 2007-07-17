@@ -1,10 +1,10 @@
-" World.vim -- The World prototype for tlib#InputList()
+" World.vim -- The World prototype for tlib#input#List()
 " @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-06-20.
-" @Revision:    0.1.54
+" @Last Change: 2007-07-10.
+" @Revision:    0.1.80
 
 if &cp || exists("loaded_tlib_world_autoload")
     finish
@@ -161,8 +161,59 @@ function! s:prototype.DisplayFilter() dict "{{{3
     return join(reverse(filter1), ' AND ')
 endf
 
-function! s:UseInputListScratch(world) "{{{3
-    let scratch = tlib#UseScratch(a:world)
+function! s:prototype.UseScratch() "{{{3
+    let id = get(self, 'scratch', '__InputList__')
+    if id =~ '^\d\+$'
+        if bufnr('%') != id
+            exec 'buffer! '. id
+        endif
+    else
+        let bn = bufnr(id)
+        if bn != -1
+            " TLogVAR bn
+            let wn = bufwinnr(bn)
+            if wn != -1
+                " TLogVAR wn
+                exec wn .'wincmd w'
+            else
+                let cmd = get(self, 'scratch_split', 1) ? 'botright sbuffer! ' : 'buffer! '
+                silent exec cmd . bn
+            endif
+        else
+            " TLogVAR id
+            let cmd = get(self, 'scratch_split', 1) ? 'botright split ' : 'edit '
+            silent exec cmd . escape(id, '%#\ ')
+            " silent exec 'split '. id
+        endif
+        setlocal buftype=nofile
+        setlocal bufhidden=hide
+        setlocal noswapfile
+        setlocal nobuflisted
+        setlocal modifiable
+        setlocal foldmethod=manual
+        set ft=tlibInputList
+    endif
+    let self.scratch = bufnr('%')
+    return self.scratch
+endf
+
+function! s:prototype.CloseScratch() "{{{3
+    let scratch = get(self, 'scratch', '')
+    " TLogVAR scratch
+    if !empty(scratch)
+        let wn = bufwinnr(scratch)
+        if wn != -1
+            " TLogVAR wn
+            exec wn .'wincmd w'
+            wincmd c
+            " redraw
+        endif
+        unlet self.scratch
+    endif
+endf
+
+function! s:prototype.UseInputListScratch() "{{{3
+    let scratch = self.UseScratch()
     syntax match InputlListCursor /^\d\+\* .*$/
     syntax match InputlListSelected /^\d\+# .*$/
     hi def link InputlListCursor Search
@@ -179,11 +230,122 @@ function! s:prototype.Reset() dict "{{{3
     let self.filter    = [['']]
     let self.idx       = ''
     let self.prefidx   = 0
-    let self.scratch   = s:UseInputListScratch(self)
+    call self.UseInputListScratch()
     call self.ResetSelected()
 endf
 
 function! s:prototype.ResetSelected() dict "{{{3
     let self.sel_idx   = []
+endf
+
+
+
+function! s:DisplayHelp(type, handlers) "{{{3
+    let help = [
+                \ 'Help:',
+                \ 'Mouse   ... Pick an item            Letter       ... Filter the list',
+                \ 'Number  ... Pick an item            +, |, !      ... AND, OR, (NOT)',
+                \ 'Enter   ... Pick the current item   <bs>, <c-bs> ... Reduce filter',
+                \ '<c|m-r> ... Reset the display       Up/Down      ... Next/previous item',
+                \ '<c|m-q> ... Edit top filter string  Page Up/Down ... Scroll',
+                \ '<c|m-z> ... Suspend/Resume          <Esc>        ... Abort',
+                \ '',
+                \ ]
+
+    if stridx(a:type, 'm') != -1
+        let help += [
+                    \ '#, <c-space> ... (Un)Select the current item',
+                    \ '<c|m-a>      ... (Un)Select all currently visible items',
+                    \ '<s-up/down>  ... (Un)Select items',
+                    \ ]
+                    " \ '<c-\>        ... Show only selected',
+    endif
+    for handler in a:handlers
+        let key = get(handler, 'key_name', '')
+        if !empty(key)
+            let desc = get(handler, 'help', '')
+            call add(help, printf('%-12s ... %s', key, desc))
+        endif
+    endfor
+    let help += [
+                \ '',
+                \ 'Warning:',
+                \ 'Please don''t try to resize the window with the mouse.',
+                \ '',
+                \ 'Note on filtering:',
+                \ 'The filter is prepended with "\V". Basically, filtering is case-insensitive.',
+                \ 'Letters at word boundaries or upper-case lettes in camel-case names is given',
+                \ 'more weight. If an OR-joined pattern start with "!", matches will be excluded.',
+                \ '',
+                \ 'Press any key to continue.',
+                \ ]
+    norm! ggdG
+    call append(0, help)
+    norm! Gddgg
+    exec 'resize '. len(help)
+endf
+
+" DisplayList(type, handlers, query, ?list)
+function! s:prototype.DisplayList(type, handlers, query, ...) "{{{3
+    " TLogVAR a:query
+    " TLogVAR self.state
+    let list = a:0 >= 1 ? a:1 : []
+    call self.UseScratch()
+    if self.state == 'scroll'
+        exec 'norm! '. self.offset .'zt'
+    elseif self.state == 'help'
+        call s:DisplayHelp(a:type, a:handlers)
+    else
+        let ll = len(list)
+        let x  = len(ll) + 1
+        " TLogVAR ll
+        if self.state =~ '\<display\>'
+            norm! ggdG
+            let w = &co - &fdc - 1
+            call append(0, map(copy(list), 'printf("%-'. w .'.'. w .'s", substitute(v:val, ''[[:cntrl:][:space:]]'', " ", "g"))'))
+            " call append(0, a:query)
+            norm! Gddgg
+            " if self.state !~ '\<redisplay\>'
+                let resize = get(self, 'resize', 0)
+                " TLogVAR resize
+                let resize = resize == 0 ? ll : min([ll, resize])
+                let resize = min([resize, (&lines * 3 / 4)])
+                " TLogVAR resize, ll, &lines
+                exec 'resize '. resize
+            " endif
+        endif
+        " TLogVAR self.prefidx
+        let base_pref = self.GetBaseIdx(self.prefidx)
+        " TLogVAR base_pref
+        if self.state =~ '\<redisplay\>'
+            call filter(b:tlibDisplayListMarks, 'index(self.sel_idx, v:val) == -1 && v:val != base_pref')
+            " TLogVAR b:tlibDisplayListMarks
+            call map(b:tlibDisplayListMarks, 'self.DisplayListMark(x, v:val, ":")')
+            " let b:tlibDisplayListMarks = map(copy(self.sel_idx), 'self.DisplayListMark(x, v:val, "#")')
+            " call add(b:tlibDisplayListMarks, self.prefidx)
+            " call self.DisplayListMark(x, self.GetBaseIdx(self.prefidx), '*')
+        endif
+        let b:tlibDisplayListMarks = map(copy(self.sel_idx), 'self.DisplayListMark(x, v:val, "#")')
+        call add(b:tlibDisplayListMarks, base_pref)
+        call self.DisplayListMark(x, base_pref, '*')
+        exec 'norm! '. self.offset .'zt'
+        let &statusline = a:query
+    endif
+    redraw
+endf
+
+function! s:prototype.DisplayListMark(x, y, mark) "{{{3
+    " TLogVAR a:y, a:mark
+    if a:x > 0 && a:y >= 0
+        " TLogDBG a:x .'x'. a:y .' '. a:mark
+        let sy = self.GetListIdx(a:y) + 1
+        " TLogVAR sy
+        if sy >= 1
+            call setpos('.', [0, sy, a:x, 0])
+            exec 'norm! r'. a:mark
+            " exec 'norm! '. a:y .'gg'. a:x .'|r'. a:mark
+        endif
+    endif
+    return a:y
 endf
 

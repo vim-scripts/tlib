@@ -3,25 +3,45 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2006-12-17.
-" @Last Change: 2007-05-22.
-" @Revision:    76
+" @Last Change: 2007-07-09.
+" @Revision:    96
+
+if !exists("loaded_tassert")
+    echoerr 'tAssert (vimscript #1730) is required'
+endif
 
 TAssertBegin! "tlib", 'autoload/tlib.vim'
 
 fun! Add(a,b)
     return a:a + a:b
 endf
-TAssert IsEqual(tlib#Inject([], 0, function('Add')), 0)
-TAssert IsEqual(tlib#Inject([1,2,3], 0, function('Add')), 6)
+TAssert IsEqual(tlib#list#Inject([], 0, function('Add')), 0)
+TAssert IsEqual(tlib#list#Inject([1,2,3], 0, function('Add')), 6)
 delfunction Add
 
-TAssert IsEqual(tlib#Compact([]), [])
-TAssert IsEqual(tlib#Compact([0,1,2,3,[], {}, ""]), [1,2,3])
+TAssert IsEqual(tlib#list#Compact([]), [])
+TAssert IsEqual(tlib#list#Compact([0,1,2,3,[], {}, ""]), [1,2,3])
 
-TAssert IsEqual(tlib#Flatten([]), [])
-TAssert IsEqual(tlib#Flatten([1,2,3]), [1,2,3])
-TAssert IsEqual(tlib#Flatten([1,2, [1,2,3], 3]), [1,2,1,2,3,3])
-TAssert IsEqual(tlib#Flatten([0,[1,2,[3,""]]]), [0,1,2,3,""])
+TAssert IsEqual(tlib#list#Flatten([]), [])
+TAssert IsEqual(tlib#list#Flatten([1,2,3]), [1,2,3])
+TAssert IsEqual(tlib#list#Flatten([1,2, [1,2,3], 3]), [1,2,1,2,3,3])
+TAssert IsEqual(tlib#list#Flatten([0,[1,2,[3,""]]]), [0,1,2,3,""])
+
+TAssert IsEqual(tlib#list#FindAll([1,2,3], 'v:val >= 2'), [2,3])
+TAssert IsEqual(tlib#list#FindAll([1,2,3], 'v:val >= 2', 'v:val * 10'), [20,30])
+
+TAssert IsEqual(tlib#list#Find([1,2,3], 'v:val >= 2'), 2)
+TAssert IsEqual(tlib#list#Find([1,2,3], 'v:val >= 2', 0, 'v:val * 10'), 20)
+TAssert IsEqual(tlib#list#Find([1,2,3], 'v:val >= 5', 10), 10)
+
+TAssert IsEqual(tlib#list#Any([1,2,3], 'v:val >= 2'), 1)
+TAssert IsEqual(tlib#list#Any([1,2,3], 'v:val >= 5'), 0)
+
+TAssert IsEqual(tlib#list#All([1,2,3], 'v:val < 5'), 1)
+TAssert IsEqual(tlib#list#All([1,2,3], 'v:val >= 2'), 0)
+
+TAssert IsEqual(tlib#list#Remove([1,2,1,2], 2), [1,1,2])
+TAssert IsEqual(tlib#list#RemoveAll([1,2,1,2], 2), [1,1])
 
 " TAssert IsEqual(TFind([], '%s == 2'), '')
 " TAssert IsEqual(TFind([], '%s == 2', 'X'), 'X')
@@ -38,38 +58,38 @@ let g:bar = 2
 let b:bar = 3
 let s:bar = 4
 
-TAssert IsEqual(tlib#GetValue('bar', 'bg'), 3)
-TAssert IsEqual(tlib#GetValue('bar', 'g'), 2)
-TAssert IsEqual(tlib#GetValue('foo', 'bg'), 1)
-TAssert IsEqual(tlib#GetValue('foo', 'g'), 1)
-TAssert IsEqual(tlib#GetValue('none', 'l'), '')
+TAssert IsEqual(tlib#var#Get('bar', 'bg'), 3)
+TAssert IsEqual(tlib#var#Get('bar', 'g'), 2)
+TAssert IsEqual(tlib#var#Get('foo', 'bg'), 1)
+TAssert IsEqual(tlib#var#Get('foo', 'g'), 1)
+TAssert IsEqual(tlib#var#Get('none', 'l'), '')
 
-TAssert IsEqual(eval(tlib#GetVar('bar', 'bg')), 3)
-TAssert IsEqual(eval(tlib#GetVar('bar', 'g')), 2)
-" TAssert IsEqual(eval(tlib#GetVar('bar', 'sg')), 4)
-TAssert IsEqual(eval(tlib#GetVar('foo', 'bg')), 1)
-TAssert IsEqual(eval(tlib#GetVar('foo', 'g')), 1)
-TAssert IsEqual(eval(tlib#GetVar('none', 'l')), '')
+TAssert IsEqual(eval(tlib#var#EGet('bar', 'bg')), 3)
+TAssert IsEqual(eval(tlib#var#EGet('bar', 'g')), 2)
+" TAssert IsEqual(eval(tlib#var#EGet('bar', 'sg')), 4)
+TAssert IsEqual(eval(tlib#var#EGet('foo', 'bg')), 1)
+TAssert IsEqual(eval(tlib#var#EGet('foo', 'g')), 1)
+TAssert IsEqual(eval(tlib#var#EGet('none', 'l')), '')
 
 unlet g:foo
 unlet g:bar
 unlet b:bar
 
-TAssert IsEqual(tlib#FileSplit('foo/bar/filename.txt'), ['foo', 'bar', 'filename.txt'])
-TAssert IsEqual(tlib#FileSplit('/foo/bar/filename.txt'), ['', 'foo', 'bar', 'filename.txt'])
-TAssert IsEqual(tlib#FileSplit('ftp://foo/bar/filename.txt'), ['ftp:/', 'foo', 'bar', 'filename.txt'])
+TAssert IsEqual(tlib#file#Split('foo/bar/filename.txt'), ['foo', 'bar', 'filename.txt'])
+TAssert IsEqual(tlib#file#Split('/foo/bar/filename.txt'), ['', 'foo', 'bar', 'filename.txt'])
+TAssert IsEqual(tlib#file#Split('ftp://foo/bar/filename.txt'), ['ftp:/', 'foo', 'bar', 'filename.txt'])
 
-TAssert IsEqual(tlib#FileJoin(['foo', 'bar', 'filename.txt']), 'foo/bar/filename.txt')
-TAssert IsEqual(tlib#FileJoin(['', 'foo', 'bar', 'filename.txt']), '/foo/bar/filename.txt')
-TAssert IsEqual(tlib#FileJoin(['ftp:/', 'foo', 'bar', 'filename.txt']), 'ftp://foo/bar/filename.txt')
+TAssert IsEqual(tlib#file#Join(['foo', 'bar', 'filename.txt']), 'foo/bar/filename.txt')
+TAssert IsEqual(tlib#file#Join(['', 'foo', 'bar', 'filename.txt']), '/foo/bar/filename.txt')
+TAssert IsEqual(tlib#file#Join(['ftp:/', 'foo', 'bar', 'filename.txt']), 'ftp://foo/bar/filename.txt')
 
-TAssert IsEqual(tlib#RelativeFilename('foo/bar/filename.txt', 'foo'), 'bar/filename.txt')
-TAssert IsEqual(tlib#RelativeFilename('foo/bar/filename.txt', 'foo/base'), '../bar/filename.txt')
-TAssert IsEqual(tlib#RelativeFilename('filename.txt', 'foo/base'), '../../filename.txt')
-TAssert IsEqual(tlib#RelativeFilename('/foo/bar/filename.txt', '/boo/base'), '../../foo/bar/filename.txt')
-TAssert IsEqual(tlib#RelativeFilename('/bar/filename.txt', '/boo/base'), '../../bar/filename.txt')
-TAssert IsEqual(tlib#RelativeFilename('/foo/bar/filename.txt', '/base'), '../foo/bar/filename.txt')
-TAssert IsEqual(tlib#RelativeFilename('c:/bar/filename.txt', 'x:/boo/base'), 'c:/bar/filename.txt')
+TAssert IsEqual(tlib#file#Relative('foo/bar/filename.txt', 'foo'), 'bar/filename.txt')
+TAssert IsEqual(tlib#file#Relative('foo/bar/filename.txt', 'foo/base'), '../bar/filename.txt')
+TAssert IsEqual(tlib#file#Relative('filename.txt', 'foo/base'), '../../filename.txt')
+TAssert IsEqual(tlib#file#Relative('/foo/bar/filename.txt', '/boo/base'), '../../foo/bar/filename.txt')
+TAssert IsEqual(tlib#file#Relative('/bar/filename.txt', '/boo/base'), '../../bar/filename.txt')
+TAssert IsEqual(tlib#file#Relative('/foo/bar/filename.txt', '/base'), '../foo/bar/filename.txt')
+TAssert IsEqual(tlib#file#Relative('c:/bar/filename.txt', 'x:/boo/base'), 'c:/bar/filename.txt')
 
 let test = tlib#Test#New()
 TAssert test.IsA('Test')
@@ -87,12 +107,12 @@ TAssert IsEqual(testc.Super('Dummy', []), 'Test.vim')
 
 
 function! TestGetArg(...) "{{{3
-    exec tlib#GetArg(1, 'foo', 1)
+    exec tlib#arg#Get(1, 'foo', 1)
     return foo
 endf
 
 function! TestGetArg1(...) "{{{3
-    exec tlib#GetArg(1, 'foo', 1, '!= ""')
+    exec tlib#arg#Get(1, 'foo', 1, '!= ""')
     return foo
 endf
 
@@ -104,7 +124,7 @@ TAssert IsEqual(TestGetArg1(''), 1)
 TAssert IsEqual(TestGetArg1(2), 2)
 
 function! TestArgs(...) "{{{3
-    exec tlib#Args([['foo', "o"], ['bar', 2]])
+    exec tlib#arg#Let([['foo', "o"], ['bar', 2]])
     return repeat(foo, bar)
 endf
 TAssert IsEqual(TestArgs(), 'oo')
@@ -112,7 +132,7 @@ TAssert IsEqual(TestArgs('a'), 'aa')
 TAssert IsEqual(TestArgs('a', 3), 'aaa')
 
 function! TestArgs1(...) "{{{3
-    exec tlib#Args(['foo', ['bar', 2]])
+    exec tlib#arg#Let(['foo', ['bar', 2]])
     return repeat(foo, bar)
 endf
 TAssert IsEqual(TestArgs1(), '')
@@ -120,7 +140,7 @@ TAssert IsEqual(TestArgs1('a'), 'aa')
 TAssert IsEqual(TestArgs1('a', 3), 'aaa')
 
 function! TestArgs2(...) "{{{3
-    exec tlib#Args(['foo', 'bar'], 1)
+    exec tlib#arg#Let(['foo', 'bar'], 1)
     return repeat(foo, bar)
 endf
 TAssert IsEqual(TestArgs2(), '1')
@@ -132,20 +152,20 @@ delfunction TestGetArg1
 delfunction TestArgs
 delfunction TestArgs1
 
+TAssert IsString(tlib#string#RemoveBackslashes('foo bar'))
+TAssert IsEqual(tlib#string#RemoveBackslashes('foo bar'), 'foo bar')
+TAssert IsEqual(tlib#string#RemoveBackslashes('foo\ bar'), 'foo bar')
+TAssert IsEqual(tlib#string#RemoveBackslashes('foo\ \\bar'), 'foo \\bar')
+TAssert IsEqual(tlib#string#RemoveBackslashes('foo\ \\bar', '\ '), 'foo \bar')
+
 TAssertEnd test test1 testc testworld
-
-
-TAssert IsString(tlib#RemoveBackslashes('foo bar'))
-TAssert IsEqual(tlib#RemoveBackslashes('foo bar'), 'foo bar')
-TAssert IsEqual(tlib#RemoveBackslashes('foo\ bar'), 'foo bar')
-TAssert IsEqual(tlib#RemoveBackslashes('foo\ \\bar'), 'foo \\bar')
-TAssert IsEqual(tlib#RemoveBackslashes('foo\ \\bar', '\ '), 'foo \bar')
 
 
 finish
 
-call tlib#InputList('s', 'Test', ['barfoobar', 'barFoobar'])
-call tlib#InputList('s', 'Test', ['barfoobar', 'bar foo bar', 'barFoobar'])
-call tlib#InputList('s', 'Test', ['barfoobar', 'bar1Foo1bar', 'barFoobar'])
+call tlib#input#List('s', 'Test', ['barfoobar', 'barFoobar'])
+call tlib#input#List('s', 'Test', ['barfoobar', 'bar foo bar', 'barFoobar'])
+call tlib#input#List('s', 'Test', ['barfoobar', 'bar1Foo1bar', 'barFoobar'])
+call tlib#input#EditList('Test', ['bar1', 'bar2', 'bar3', 'foo1', 'foo2', 'foo3'])
 
 

@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2006-12-17.
-" @Last Change: 2007-07-09.
-" @Revision:    96
+" @Last Change: 2007-07-18.
+" @Revision:    97
 
 if !exists("loaded_tassert")
     echoerr 'tAssert (vimscript #1730) is required'
@@ -163,9 +163,9 @@ TAssertEnd test test1 testc testworld
 
 finish
 
-call tlib#input#List('s', 'Test', ['barfoobar', 'barFoobar'])
-call tlib#input#List('s', 'Test', ['barfoobar', 'bar foo bar', 'barFoobar'])
-call tlib#input#List('s', 'Test', ['barfoobar', 'bar1Foo1bar', 'barFoobar'])
-call tlib#input#EditList('Test', ['bar1', 'bar2', 'bar3', 'foo1', 'foo2', 'foo3'])
+echo tlib#input#List('s', 'Test', ['barfoobar', 'barFoobar'])
+echo tlib#input#List('s', 'Test', ['barfoobar', 'bar foo bar', 'barFoobar'])
+echo tlib#input#List('s', 'Test', ['barfoobar', 'bar1Foo1bar', 'barFoobar'])
+echo tlib#input#EditList('Test', ['bar1', 'bar2', 'bar3', 'foo1', 'foo2', 'foo3'])
 
 

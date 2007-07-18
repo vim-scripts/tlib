@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-07-10.
-" @Revision:    0.1.80
+" @Last Change: 2007-07-18.
+" @Revision:    0.1.84
 
 if &cp || exists("loaded_tlib_world_autoload")
     finish
@@ -161,55 +161,12 @@ function! s:prototype.DisplayFilter() dict "{{{3
     return join(reverse(filter1), ' AND ')
 endf
 
-function! s:prototype.UseScratch() "{{{3
-    let id = get(self, 'scratch', '__InputList__')
-    if id =~ '^\d\+$'
-        if bufnr('%') != id
-            exec 'buffer! '. id
-        endif
-    else
-        let bn = bufnr(id)
-        if bn != -1
-            " TLogVAR bn
-            let wn = bufwinnr(bn)
-            if wn != -1
-                " TLogVAR wn
-                exec wn .'wincmd w'
-            else
-                let cmd = get(self, 'scratch_split', 1) ? 'botright sbuffer! ' : 'buffer! '
-                silent exec cmd . bn
-            endif
-        else
-            " TLogVAR id
-            let cmd = get(self, 'scratch_split', 1) ? 'botright split ' : 'edit '
-            silent exec cmd . escape(id, '%#\ ')
-            " silent exec 'split '. id
-        endif
-        setlocal buftype=nofile
-        setlocal bufhidden=hide
-        setlocal noswapfile
-        setlocal nobuflisted
-        setlocal modifiable
-        setlocal foldmethod=manual
-        set ft=tlibInputList
-    endif
-    let self.scratch = bufnr('%')
-    return self.scratch
+function! s:prototype.UseScratch() dict "{{{3
+    return tlib#scratch#UseScratch(self)
 endf
 
-function! s:prototype.CloseScratch() "{{{3
-    let scratch = get(self, 'scratch', '')
-    " TLogVAR scratch
-    if !empty(scratch)
-        let wn = bufwinnr(scratch)
-        if wn != -1
-            " TLogVAR wn
-            exec wn .'wincmd w'
-            wincmd c
-            " redraw
-        endif
-        unlet self.scratch
-    endif
+function! s:prototype.CloseScratch() dict "{{{3
+    return tlib#scratch#CloseScratch(self)
 endf
 
 function! s:prototype.UseInputListScratch() "{{{3
@@ -309,7 +266,7 @@ function! s:prototype.DisplayList(type, handlers, query, ...) "{{{3
                 let resize = get(self, 'resize', 0)
                 " TLogVAR resize
                 let resize = resize == 0 ? ll : min([ll, resize])
-                let resize = min([resize, (&lines * 3 / 4)])
+                let resize = min([resize, (&lines * g:tlib_inputlist_pct / 100)])
                 " TLogVAR resize, ll, &lines
                 exec 'resize '. resize
             " endif
@@ -347,5 +304,16 @@ function! s:prototype.DisplayListMark(x, y, mark) "{{{3
         endif
     endif
     return a:y
+endf
+
+
+function! s:prototype.SwitchWindow(where) dict "{{{3
+    let wnr = get(self, a:where.'_wnr')
+    if wnr
+        exec wnr .'wincmd w'
+        return 1
+    else
+        return 0
+    endif
 endf
 

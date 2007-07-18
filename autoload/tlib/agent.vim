@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-24.
-" @Last Change: 2007-07-09.
-" @Revision:    0.1.41
+" @Last Change: 2007-07-18.
+" @Revision:    0.1.47
 
 if &cp || exists("loaded_tlib_agent_autoload")
     finish
@@ -253,29 +253,40 @@ endf
 
 
 " Files related {{{1
+function! tlib#agent#ViewFile(world, selected)
+    if a:world.SwitchWindow('win')
+        call tlib#file#With('edit', 'buffer', a:selected, a:world)
+        if !a:world.SwitchWindow('list')
+            throw 'tlib: Cannot switch back to list window: '. string(a:world)
+        end
+    endif
+    let a:world.state = 'display'
+    return a:world
+endf
+
 function! tlib#agent#EditFile(world, selected)
-    call a:world.CloseScratch()
-    call tlib#file#With('edit', 'buffer', a:selected, a:world)
-    return tlib#agent#Exit(a:world, a:selected)
+    return tlib#agent#Exit(tlib#agent#ViewFile(world, a:selected), a:selected)
 endf
 
 function! tlib#agent#EditFileInSplit(world, selected)
     call a:world.CloseScratch()
-    call tlib#file#With('edit', 'buffer', a:selected[0:0], a:world)
-    call tlib#file#With('split', 'sbuffer', a:selected[1:-1], a:world)
+    " call tlib#file#With('edit', 'buffer', a:selected[0:0], a:world)
+    " call tlib#file#With('split', 'sbuffer', a:selected[1:-1], a:world)
+    call tlib#file#With('split', 'sbuffer', a:selected, a:world)
     return tlib#agent#Exit(a:world, a:selected)
 endf
 
 function! tlib#agent#EditFileInVSplit(world, selected)
     call a:world.CloseScratch()
-    call tlib#file#With('edit', 'buffer', a:selected[0:0], a:world)
-    call tlib#file#With('vertical split', 'vertical sbuffer', a:selected[1:-1], a:world)
+    " call tlib#file#With('edit', 'buffer', a:selected[0:0], a:world)
+    " call tlib#file#With('vertical split', 'vertical sbuffer', a:selected[1:-1], a:world)
+    call tlib#file#With('vertical split', 'vertical sbuffer', a:selected, a:world)
     return tlib#agent#Exit(a:world, a:selected)
 endf
 
 function! tlib#agent#EditFileInTab(world, selected)
     call a:world.CloseScratch()
-    call tlib#file#With('tabe', 'tab buffer', a:selected, a:world)
+    call tlib#file#With('tabedit', 'tab buffer', a:selected, a:world)
     return tlib#agent#Exit(a:world, a:selected)
 endf
 

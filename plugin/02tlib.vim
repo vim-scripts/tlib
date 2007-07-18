@@ -3,13 +3,18 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-07-09.
-" @Revision:    0.9.129
+" @Last Change: 2007-07-18.
+" @Revision:    0.10.148
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
 "
 " TODO:
+" - tlib#input#List(): When using <c-z>, a result is prematurely 
+"   returned to the caller. When resuming there is no recipient for the 
+"   acutal result.
+" - tlib#input#List(): Some kind of command line to edit some 
+"   preferences on the fly
 " - tlib#input#List() shouldn't take a list of handlers but an instance 
 "   of tlib#World as argument.
 
@@ -20,7 +25,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 9
+let loaded_tlib = 10
 
 " When 1, automatically select a single item (after applying the filter).
 if !exists('g:tlib_pick_last_item')      | let g:tlib_pick_last_item = 1        | endif
@@ -28,6 +33,11 @@ if !exists('g:tlib_pick_last_item')      | let g:tlib_pick_last_item = 1        
 " If a list is bigger than this value, don't try to be smart when 
 " selecting an item. Be slightly faster instead.
 if !exists('g:tlib_sortprefs_threshold') | let g:tlib_sortprefs_threshold = 200 | endif
+
+" Size of the input list window (in percent) from the main size (of &lines).
+if !exists('g:tlib_inputlist_pct') "{{{2
+    let g:tlib_inputlist_pct = 60
+endif
 
 " When editing a list typing these numeric chars (as returned by 
 " getchar()) will select an item based on its index, not based on its 
@@ -203,6 +213,14 @@ actually needed)
 characters in the queue (if any)
 - tlib#input#EditList(): Now has cut, copy, paste functionality.
 - Added documentation and examples
+
+0.10
+- tlib#input#List(): (v)split type of commands leave the original window 
+untouched (you may use <c-w> to replace its contents)
+- tlib#file#With(): Check whether an existing buffer is loaded.
+- Scratch related functions went to tlib/scratch.vim so that they are 
+accessible from other scripts.
+- Configure the list window height via g:tlib_inputlist_pct (1..100%)
 
 
 " - tlib#input#List(): Numbers without modifiers are now consideres part of 

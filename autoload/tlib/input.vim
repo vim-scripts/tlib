@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-07-09.
-" @Revision:    0.0.9
+" @Last Change: 2007-07-18.
+" @Revision:    0.0.11
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -53,7 +53,7 @@ function! tlib#input#List(type, ...) "{{{3
         let world = tlib#World#New({
                     \ 'type': a:type,
                     \ 'base': list,
-                    \ 'wnr': winnr(),
+                    \ 'win_wnr': winnr(),
                     \ 'query': query,
                     \ 'arguments': [a:type, query, list, handlers, rv, timeout],
                     \ })
@@ -192,6 +192,7 @@ function! tlib#input#List(type, ...) "{{{3
                         let world.state = ''
                     endif
                 endif
+                let world.list_wnr = winnr()
 
                 " TLogVAR timeout
                 let c = tlib#char#Get(timeout)
@@ -291,7 +292,7 @@ function! tlib#input#List(type, ...) "{{{3
         " TLogDBG 'finally 2'
         if world.state !~ '\<suspend\>'
             call world.CloseScratch()
-            exec world.wnr .'wincmd w'
+            exec world.win_wnr .'wincmd w'
         endif
         for i in range(0,5)
             call getchar(0)

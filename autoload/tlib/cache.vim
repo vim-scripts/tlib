@@ -3,15 +3,16 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-06-30.
-" @Revision:    0.1.6
+" @Last Change: 2007-07-27.
+" @Revision:    0.1.9
 
 if &cp || exists("loaded_tlib_cache_autoload")
     finish
 endif
 let loaded_tlib_cache_autoload = 1
 
-" tlib#cache#Filename(type, ?file=%, ?mkdir=0)
+
+" :def: function! tlib#cache#Filename(type, ?file=%, ?mkdir=0)
 function! tlib#cache#Filename(type, ...) "{{{3
     " TLogDBG 'bufname='. bufname('.')
     if empty(expand('%:t'))
@@ -32,11 +33,13 @@ function! tlib#cache#Filename(type, ...) "{{{3
     retur tlib#file#Join([dir, file])
 endf
 
+
 function! tlib#cache#Save(cfile, dictionary) "{{{3
     if !empty(a:cfile)
         call writefile([string(a:dictionary)], a:cfile, 'b')
     endif
 endf
+
 
 function! tlib#cache#Get(cfile) "{{{3
     if !empty(a:cfile) && filereadable(a:cfile)

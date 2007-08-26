@@ -3,15 +3,18 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-06-30.
-" @Revision:    0.0.2
+" @Last Change: 2007-07-25.
+" @Revision:    0.0.4
 
 if &cp || exists("loaded_tlib_url_autoload")
     finish
 endif
 let loaded_tlib_url_autoload = 1
 
-" These functions could use printf() now.
+
+" TODO: These functions could use printf() now.
+
+" Decode an encoded URL.
 function! tlib#url#Decode(url) "{{{3
     let rv = ''
     let n  = 0
@@ -35,6 +38,8 @@ function! tlib#url#Decode(url) "{{{3
     return rv
 endf
 
+
+" Encode a single character.
 function! tlib#url#EncodeChar(char) "{{{3
     if a:char == '%'
         return '%%'
@@ -52,6 +57,8 @@ function! tlib#url#EncodeChar(char) "{{{3
     endif
 endf
 
+
+" Encode an url.
 function! tlib#url#Encode(url) "{{{3
     return substitute(a:url, '\([^a-zA-Z0-9_.-]\)', '\=tlib#url#EncodeChar(submatch(1))', 'g')
 endf

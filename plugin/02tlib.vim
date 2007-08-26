@@ -3,20 +3,18 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-07-18.
-" @Revision:    0.10.148
+" @Last Change: 2007-08-26.
+" @Revision:    0.11.308
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
 "
 " TODO:
-" - tlib#input#List(): When using <c-z>, a result is prematurely 
-"   returned to the caller. When resuming there is no recipient for the 
-"   acutal result.
+" - tlib#file#Relative(): currently relies on cwd to be set
+" - tlib#input#EditList(): Disable selection by index number
 " - tlib#input#List(): Some kind of command line to edit some 
 "   preferences on the fly
-" - tlib#input#List() shouldn't take a list of handlers but an instance 
-"   of tlib#World as argument.
+" - tlib#input#List(): Make commands accessible via popup-menu
 
 if &cp || exists("loaded_tlib")
     finish
@@ -25,127 +23,177 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 10
+let loaded_tlib = 11
+let s:save_cpo = &cpo
+set cpo&vim
 
-" When 1, automatically select a single item (after applying the filter).
-if !exists('g:tlib_pick_last_item')      | let g:tlib_pick_last_item = 1        | endif
+
+" Commands {{{1
+" See |tlib#var#Let| for an example.
+" command! -nargs=+ TLLet exec tlib#var#Let(<args>)
+
+" :display: :TLet VAR = VALUE
+" Set a variable only if it doesn't already exist.
+" EXAMPLES: >
+"   TLet foo = 1
+command! -nargs=+ TLet let s:tllet_var = matchstr(<q-args>, '^\S\+')
+            \ | let s:tllet_val = matchstr(<q-args>, '=\s*\zs.*')
+            \ | exec printf('if !exists(%s) | let %s = %s | endif', string(s:tllet_var), s:tllet_var, s:tllet_val)
+            " \ | unlet s:tllet_var s:tllet_val
+
+
+" Open a scratch buffer (a buffer without a file). >
+"   TScratch  ... use split window
+"   TScratch! ... use the whole frame
+command! -bar -nargs=* -bang TScratch call tlib#scratch#UseScratch({'scratch_split': '<bang>' != '!', <args>})
+
+
+" :display: :TVarArg VAR1, [VAR2, DEFAULT2] ...
+" A convenience wrapper for |tlib#arg#Let|.
+" EXAMPLES: >
+"   function! Foo(...)
+"       TVarArg ['a', 1], 'b'
+"       echo 'a='. a
+"       echo 'b='. b
+"   endf
+command! -nargs=+ TVarArg exec tlib#arg#Let([<args>])
+
+
+
+" Variables {{{1
+
+" When 1, automatically select a the last remaining item after applying 
+" any filters.
+TLet g:tlib_pick_last_item = 1
 
 " If a list is bigger than this value, don't try to be smart when 
 " selecting an item. Be slightly faster instead.
-if !exists('g:tlib_sortprefs_threshold') | let g:tlib_sortprefs_threshold = 200 | endif
+TLet g:tlib_sortprefs_threshold = 200
+
+" Scratch window position
+TLet g:tlib_scratch_pos = 'botright'
 
 " Size of the input list window (in percent) from the main size (of &lines).
-if !exists('g:tlib_inputlist_pct') "{{{2
-    let g:tlib_inputlist_pct = 60
-endif
+TLet g:tlib_inputlist_pct = 70
 
-" When editing a list typing these numeric chars (as returned by 
-" getchar()) will select an item based on its index, not based on its 
-" name. I.e. in the default setting, typing a "4" will select the fourth 
-" item, not the item called "4".
-if !exists('g:tlib_numeric_chars')
-    let g:tlib_numeric_chars = {
-                \ 48: 48,
-                \ 49: 48,
-                \ 50: 48,
-                \ 51: 48,
-                \ 52: 48,
-                \ 53: 48,
-                \ 54: 48,
-                \ 55: 48,
-                \ 56: 48,
-                \ 57: 48,
-                \ 176: 176,
-                \ 177: 176,
-                \ 178: 176,
-                \ 179: 176,
-                \ 180: 176,
-                \ 181: 176,
-                \ 182: 176,
-                \ 183: 176,
-                \ 184: 176,
-                \ 185: 176,
-                \}
-endif
+" Size of filename columns when listing filenames
+TLet g:tlib_inputlist_width_filename = &co / 3
+" TLet g:tlib_inputlist_width_filename = 25
 
-if !exists('g:tlib_handlers_EditList') "{{{2
-    let g:tlib_handlers_EditList = [
-                \ {'key': 5,  'agent': 'tlib#agent#EditItem',    'key_name': '<c-e>', 'help': 'Edit item'},
-                \ {'key': 4,  'agent': 'tlib#agent#DeleteItems', 'key_name': '<c-d>', 'help': 'Delete item(s)'},
-                \ {'key': 14, 'agent': 'tlib#agent#NewItem',     'key_name': '<c-n>', 'help': 'New item'},
-                \ {'key': 24, 'agent': 'tlib#agent#Cut',         'key_name': '<c-x>', 'help': 'Cut item(s)'},
-                \ {'key':  3, 'agent': 'tlib#agent#Copy',        'key_name': '<c-c>', 'help': 'Copy item(s)'},
-                \ {'key': 22, 'agent': 'tlib#agent#Paste',       'key_name': '<c-v>', 'help': 'Paste item(s)'},
-                \ {'pick_last_item': 0},
-                \ {'return_agent': 'tlib#agent#EditReturnValue'},
-                \ ]
-endif
+" The highlight group to use for showing matches in the input list window.
+TLet g:tlib_inputlist_higroup = 'IncSearch'
 
-if !exists('g:tlib_keyagents_InputList_s') "{{{2
-    let g:tlib_keyagents_InputList_s = {
-                \ "\<PageUp>":   'tlib#agent#PageUp',
-                \ "\<PageDown>": 'tlib#agent#PageDown',
-                \ "\<Up>":       'tlib#agent#Up',
-                \ "\<Down>":     'tlib#agent#Down',
-                \ 18:            'tlib#agent#Reset',
-                \ 242:           'tlib#agent#Reset',
-                \ 17:            'tlib#agent#Input',
-                \ 241:           'tlib#agent#Input',
-                \ 27:            'tlib#agent#Exit',
-                \ 26:            'tlib#agent#Suspend',
-                \ 250:           'tlib#agent#Suspend',
-                \ 63:            'tlib#agent#Help',
-                \ "\<F1>":       'tlib#agent#Help',
-                \ 124:           'tlib#agent#OR',
-                \ 43:            'tlib#agent#AND',
-                \ "\<bs>":       'tlib#agent#ReduceFilter',
-                \ "\<del>":      'tlib#agent#ReduceFilter',
-                \ "\<c-bs>":     'tlib#agent#PopFilter',
-                \ "\<m-bs>":     'tlib#agent#PopFilter',
-                \ "\<c-del>":    'tlib#agent#PopFilter',
-                \ "\<m-del>":    'tlib#agent#PopFilter',
-                \ 191:           'tlib#agent#Debug',
-                \ }
-endif
-
-if !exists('g:tlib_keyagents_InputList_m') "{{{2
-    " "\<c-space>": 'tlib#agent#Select'
-    let g:tlib_keyagents_InputList_m = {
-                \ 35:          'tlib#agent#Select',
-                \ "\<s-up>":   'tlib#agent#SelectUp',
-                \ "\<s-down>": 'tlib#agent#SelectDown',
-                \ 1:           'tlib#agent#SelectAll',
-                \ 225:         'tlib#agent#SelectAll',
-                \ }
-endif
-
-if !exists('g:tlib_filename_sep') "{{{2
-    let g:tlib_filename_sep = '/'
-    " let g:tlib_filename_sep = exists('+shellslash') && !&shellslash ? '\' : '/'
-endif
+TLet g:tlib_filename_sep = '/'
+" TLet g:tlib_filename_sep = exists('+shellslash') && !&shellslash ? '\' : '/'   " {{{2
 
 
-" See tlib#var#Let() for an example.
-command! -nargs=+ TLLet exec tlib#var#Let(<args>)
+" Where to display the line when using |tlib#buffer#ViewLine|.
+" For possible values for position see |scroll-cursor|.
+TLet g:tlib_viewline_position = 'zz'
+
+" :doc:
+" Keys for |tlib#input#List|~
+
+TLet g:tlib_inputlist_and = ' '
+TLet g:tlib_inputlist_or  = '|'
+TLet g:tlib_inputlist_not = '-'
+
+" When editing a list with |tlib#input#List|, typing these numeric chars 
+" (as returned by getchar()) will select an item based on its index, not 
+" based on its name. I.e. in the default setting, typing a "4" will 
+" select the fourth item, not the item called "4".
+" In order to make keys 0-9 filter the items in the list and make 
+" <m-[0-9]> select an item by its index, remove the keys 48 to 57 from 
+" this dictionary.
+" Format: [KEY] = BASE ... the number is calculated as KEY - BASE.
+" :nodefault:
+TLet g:tlib_numeric_chars = {
+            \ 48: 48,
+            \ 49: 48,
+            \ 50: 48,
+            \ 51: 48,
+            \ 52: 48,
+            \ 53: 48,
+            \ 54: 48,
+            \ 55: 48,
+            \ 56: 48,
+            \ 57: 48,
+            \ 176: 176,
+            \ 177: 176,
+            \ 178: 176,
+            \ 179: 176,
+            \ 180: 176,
+            \ 181: 176,
+            \ 182: 176,
+            \ 183: 176,
+            \ 184: 176,
+            \ 185: 176,
+            \}
+
+" :nodefault:
+TLet g:tlib_keyagents_InputList_s = {
+            \ "\<PageUp>":   'tlib#agent#PageUp',
+            \ "\<PageDown>": 'tlib#agent#PageDown',
+            \ "\<Up>":       'tlib#agent#Up',
+            \ "\<Down>":     'tlib#agent#Down',
+            \ "\<c-Up>":     'tlib#agent#UpN',
+            \ "\<c-Down>":   'tlib#agent#DownN',
+            \ 18:            'tlib#agent#Reset',
+            \ 242:           'tlib#agent#Reset',
+            \ 17:            'tlib#agent#Input',
+            \ 241:           'tlib#agent#Input',
+            \ 27:            'tlib#agent#Exit',
+            \ 26:            'tlib#agent#Suspend',
+            \ 250:           'tlib#agent#Suspend',
+            \ 15:            'tlib#agent#SuspendToParentWindow',  
+            \ 63:            'tlib#agent#Help',
+            \ "\<F1>":       'tlib#agent#Help',
+            \ "\<bs>":       'tlib#agent#ReduceFilter',
+            \ "\<del>":      'tlib#agent#ReduceFilter',
+            \ "\<c-bs>":     'tlib#agent#PopFilter',
+            \ "\<m-bs>":     'tlib#agent#PopFilter',
+            \ "\<c-del>":    'tlib#agent#PopFilter',
+            \ "\<m-del>":    'tlib#agent#PopFilter',
+            \ 191:           'tlib#agent#Debug',
+            \ char2nr(g:tlib_inputlist_or):  'tlib#agent#OR',
+            \ char2nr(g:tlib_inputlist_and): 'tlib#agent#AND',
+            \ }
+
+" Number of items to move when pressing <c-up/down> in the input list window.
+TLet g:tlib_scroll_lines = 10
+
+" :nodefault:
+TLet g:tlib_keyagents_InputList_m = {
+            \ 35:          'tlib#agent#Select',
+            \ "\<s-up>":   'tlib#agent#SelectUp',
+            \ "\<s-down>": 'tlib#agent#SelectDown',
+            \ 1:           'tlib#agent#SelectAll',
+            \ 225:         'tlib#agent#SelectAll',
+            \ }
+" "\<c-space>": 'tlib#agent#Select'
+
+" :nodefault:
+TLet g:tlib_handlers_EditList = [
+            \ {'key': 5,  'agent': 'tlib#agent#EditItem',    'key_name': '<c-e>', 'help': 'Edit item'},
+            \ {'key': 4,  'agent': 'tlib#agent#DeleteItems', 'key_name': '<c-d>', 'help': 'Delete item(s)'},
+            \ {'key': 14, 'agent': 'tlib#agent#NewItem',     'key_name': '<c-n>', 'help': 'New item'},
+            \ {'key': 24, 'agent': 'tlib#agent#Cut',         'key_name': '<c-x>', 'help': 'Cut item(s)'},
+            \ {'key':  3, 'agent': 'tlib#agent#Copy',        'key_name': '<c-c>', 'help': 'Copy item(s)'},
+            \ {'key': 22, 'agent': 'tlib#agent#Paste',       'key_name': '<c-v>', 'help': 'Paste item(s)'},
+            \ {'pick_last_item': 0},
+            \ {'return_agent': 'tlib#agent#EditReturnValue'},
+            \ ]
+
+augroup TLib
+    autocmd!
+augroup END
 
 
-" runtime autoload/tlib/agent.vim
-
+let &cpo = s:save_cpo
+unlet s:save_cpo
 
 finish
 -----------------------------------------------------------------------
-This library provides some utility functions. There isn't much need to 
-install it unless another plugin requires you to do so.
-
-tlib#InputList(type, query, list)
-    Select items from a list that can be filtered using a regexp and 
-    does some other tricks. The goal of the function is to let you 
-    select items from a list with only a few keystrokes. The function 
-    can be used to select a single item or multiple items.
-
-tlib#EditList(query, list)
-    Edit items in a list. Return the modified list.
-
 
 CHANGES:
 0.1
@@ -222,8 +270,31 @@ untouched (you may use <c-w> to replace its contents)
 accessible from other scripts.
 - Configure the list window height via g:tlib_inputlist_pct (1..100%)
 
-
-" - tlib#input#List(): Numbers without modifiers are now consideres part of 
-" the filename by default (check out g:tlib_numeric_chars for how to 
-" change this).
+0.11
+NEW:
+    - The :TLet command replaces :TLLet (which was removed)
+    - :TScratch[!] command (with ! don't split but use the whole window)
+    - tlib#rx#Escape(text, ?magic='m')
+    - tlib#buffer#GetList(?show_hidden=0)
+    - tlib#dir#CD(), tlib#dir#Push(), tlib#dir#Pop()
+    - tlib#input#ListW: A slightly remodeled version of tlib#input#List 
+    that takes a World as second argument.
+    - Added some documentation doc/tlib.txt (most of it is automatically 
+    compiled from the source files)
+CHANGES:
+    - tlib#input#List(): The default keys for AND, NOT have changed to 
+    be more Google-like (space, minus); the keys can be configured via 
+    global variables.
+IMPROVEMENTS:
+    - In file listings, indicate if a file is loaded, listed, modified 
+    etc.
+    - tlib#input#List(): Highlight the filter pattern
+    - tlib#input#List(): <c-up/down> scrolls g:tlib_scroll_lines 
+    (default=10) lines
+FIXES:
+    - tlib#input#List(): Centering line, clear match, clear & restore 
+    the search register
+    - tlib#input#List(): Ensure the window layout doesn't change (if the 
+    number of windows hasn't changed)
+    - tlib#arg#Ex(): Don't escape backslashes by default
 

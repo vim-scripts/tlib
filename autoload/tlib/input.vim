@@ -3,23 +3,35 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-07-18.
-" @Revision:    0.0.11
+" @Last Change: 2007-08-25.
+" @Revision:    0.0.267
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
 endif
 let loaded_tlib_input_autoload = 1
 
+" :filedoc:
+" Input-related, select from a list etc.
 
-""" Input-related, select from a list etc. {{{1
 
 " Functions related to tlib#input#List(type, ...) "{{{2
 
-" tlib#input#List(type. ?query='', ?list=[], ?handlers=[], ?default="", ?timeout=0)
-"
+" :def: function! tlib#input#List(type. ?query='', ?list=[], ?handlers=[], ?default="", ?timeout=0)
 " Select a single or multiple items from a list. Return either the list 
 " of selected elements or its indexes.
+"
+" By default, typing numbers will select an item by its index. See 
+" |g:tlib_numeric_chars| to find out how to change this.
+"
+" The item is automatically selected if the numbers typed equals the 
+" number of digits of the list length. I.e. if a list contains 20 items, 
+" typing 1 will first highlight item 1 but it won't select/use it 
+" because 1 is an ambiguous input in this context. If you press enter, 
+" the first item will be selected. If you press another digit (e.g. 0), 
+" item 10 will be selected. Another way to select item 1 would be to 
+" type 01. If the list contains only 9 items, typing 1 would select the 
+" first item right away.
 "
 " type can be:
 "     s  ... Return one selected element
@@ -27,11 +39,11 @@ let loaded_tlib_input_autoload = 1
 "     m  ... Return a list of selcted elements
 "     mi ... Return a list of indexes
 "
-" EXAMPLES:
-" echo tlib#input#List('s', 'Select one item', [100,200,300])
-" echo tlib#input#List('si', 'Select one item', [100,200,300])
-" echo tlib#input#List('m', 'Select one or more item(s)', [100,200,300])
-" echo tlib#input#List('mi', 'Select one or more item(s)', [100,200,300])
+" EXAMPLES: >
+"   echo tlib#input#List('s', 'Select one item', [100,200,300])
+"   echo tlib#input#List('si', 'Select one item', [100,200,300])
+"   echo tlib#input#List('m', 'Select one or more item(s)', [100,200,300])
+"   echo tlib#input#List('mi', 'Select one or more item(s)', [100,200,300])
 function! tlib#input#List(type, ...) "{{{3
     exec tlib#arg#Let([
         \ ['query', ''],
@@ -43,46 +55,66 @@ function! tlib#input#List(type, ...) "{{{3
     " let handlers = a:0 >= 1 ? a:1 : []
     " let rv       = a:0 >= 2 ? a:2 : ''
     " let timeout  = a:0 >= 3 ? a:3 : 0
-    let backchar = ["\<bs>", "\<del>"]
+    " let backchar = ["\<bs>", "\<del>"]
 
     if a:type =~ '^resume'
         let world = b:tlib_{matchstr(a:type, ' \zs.\+')}
-        " unlet b:tlib_{matchstr(a:type, ' \zs.\+')}
-        let [_, query, list, handlers, rv, timeout] = world.arguments
     else
         let world = tlib#World#New({
                     \ 'type': a:type,
                     \ 'base': list,
-                    \ 'win_wnr': winnr(),
                     \ 'query': query,
-                    \ 'arguments': [a:type, query, list, handlers, rv, timeout],
+                    \ 'timeout': timeout,
+                    \ 'rv': rv,
+                    \ 'handlers': handlers,
                     \ })
+        let scratch_name     = tlib#list#Find(handlers, 'has_key(v:val, "scratch_name")', '', 'v:val.scratch_name')
+        if !empty(scratch_name)
+            let world.scratch = scratch_name
+        endif
+        let world.scratch_vertical = tlib#list#Find(handlers, 'has_key(v:val, "scratch_vertical")', 0, 'v:val.scratch_vertical')
+        call world.Set_display_format(tlib#list#Find(handlers, 'has_key(v:val, "display_format")', '', 'v:val.display_format'))
+        let world.initial_index = tlib#list#Find(handlers, 'has_key(v:val, "initial_index")', 1, 'v:val.initial_index')
+        let world.state_handlers   = filter(copy(handlers), 'has_key(v:val, "state")')
+        let world.post_handlers    = filter(copy(handlers), 'has_key(v:val, "postprocess")')
+        let world.filter_format    = tlib#list#Find(handlers, 'has_key(v:val, "filter_format")', '', 'v:val.filter_format')
+        let world.return_agent     = tlib#list#Find(handlers, 'has_key(v:val, "return_agent")', '', 'v:val.return_agent')
+        let world.resize           = tlib#list#Find(handlers, 'has_key(v:val, "resize")', '', 'v:val.resize')
+        let world.show_empty       = tlib#list#Find(handlers, 'has_key(v:val, "show_empty")', 0, 'v:val.show_empty')
+        let world.pick_last_item   = tlib#list#Find(handlers, 'has_key(v:val, "pick_last_item")', 
+                    \ tlib#var#Get('tlib_pick_last_item', 'bg'), 'v:val.pick_last_item')
+        let world.numeric_chars    = tlib#list#Find(handlers, 'has_key(v:val, "numeric_chars")', 
+                    \ tlib#var#Get('tlib_numeric_chars', 'bg'), 'v:val.numeric_chars')
+        let world.key_handlers     = filter(copy(handlers), 'has_key(v:val, "key")')
     endif
+    return tlib#input#ListW(world)
+endf
 
-    let state_handlers   = filter(copy(handlers), 'has_key(v:val, "state")')
-    let post_handlers    = filter(copy(handlers), 'has_key(v:val, "postprocess")')
-    let display_format   = tlib#list#Find(handlers, 'has_key(v:val, "display_format")', '', 'v:val.display_format')
-    if display_format == 'filename'
-        " let display_format = 'printf("%%-20s  %%s", fnamemodify(%s, ":t"), fnamemodify(%s, ":h"))'
-        let display_format = 's:DisplayFormat(%s)'
+
+" :def: function! tlib#input#ListW(world, ?command='')
+" The second argument, command is meant for internal use only.
+" The same as |tlib#input#List| but the arguments are packed into world 
+" (an instance of tlib#World as returned by |tlib#World#New|).
+function! tlib#input#ListW(world, ...) "{{{3
+    TVarArg 'cmd'
+    let world = a:world
+    if cmd =~ '^resume'
+        let world.initial_index = line('.')
+        call world.Retrieve(1)
+    elseif !world.initialized
+        " TLogVAR world.initialized, world.win_wnr, world.bufnr
+        let world.initialized = 1
+        let world.win_wnr = winnr()
+        let world.bufnr   = bufnr('%')
+        let world.cursor  = getpos('.')
+        let world.winview = tlib#win#GetLayout()
+        call world.Reset(1)
     endif
-    let filter_format    = tlib#list#Find(handlers, 'has_key(v:val, "filter_format")', '', 'v:val.filter_format')
-    let return_agent     = tlib#list#Find(handlers, 'has_key(v:val, "return_agent")')
-    let resize_value     = tlib#list#Find(handlers, 'has_key(v:val, "resize")')
-    if !empty(resize_value) && a:type !~ '^resume'
-        let world.resize = resize_value.resize
-    endif
-    let show_empty       = tlib#list#Find(handlers, 'has_key(v:val, "show_empty")', 0, 'v:val.show_empty')
-    let pick_last_item   = tlib#list#Find(handlers, 'has_key(v:val, "pick_last_item")', 
-                \ tlib#var#Get('tlib_pick_last_item', 'bg'), 'v:val.pick_last_item')
-    let numeric_chars    = tlib#list#Find(handlers, 'has_key(v:val, "numeric_chars")', 
-                \ tlib#var#Get('tlib_numeric_chars', 'bg'), 'v:val.numeric_chars')
-    let key_handlers = filter(copy(handlers), 'has_key(v:val, "key")')
     let key_agents = copy(g:tlib_keyagents_InputList_s)
     if stridx(world.type, 'm') != -1
         call extend(key_agents, g:tlib_keyagents_InputList_m, 'force')
     endif
-    for handler in key_handlers
+    for handler in world.key_handlers
         let k = get(handler, 'key', '')
         if !empty(k)
             let key_agents[k] = handler.agent
@@ -90,16 +122,18 @@ function! tlib#input#List(type, ...) "{{{3
     endfor
     let statusline  = &statusline
     let laststatus  = &laststatus
+    let lastsearch  = @/
+    let @/ = ''
     let &laststatus = 2
 
     try
-        while !empty(world.state) && world.state !~ '^exit' && (show_empty || !empty(world.base))
+        while !empty(world.state) && world.state !~ '^exit' && (world.show_empty || !empty(world.base))
             " TLogDBG 'while'
             " TLogVAR world.state
             try
-                for handler in state_handlers
+                for handler in world.state_handlers
                     let eh = get(handler, 'state', '')
-                    if !empty(eh) && eh == world.state
+                    if !empty(eh) && world.state =~ eh
                         let ea = get(handler, 'exec', '')
                         if !empty(ea)
                             exec ea
@@ -111,8 +145,9 @@ function! tlib#input#List(type, ...) "{{{3
                     endif
                 endfor
 
-                if world.state == 'reset'
+                if world.state =~ '\<reset\>'
                     " TLogDBG 'reset'
+                    " call world.Reset(world.state =~ '\<initial\>')
                     call world.Reset()
                     continue
                 endif
@@ -127,22 +162,27 @@ function! tlib#input#List(type, ...) "{{{3
 
                 " TLogDBG 1
                 " TLogVAR world.state
+                if world.state == 'scroll'
+                    let world.prefidx = world.offset
+                    let world.state = 'redisplay'
+                endif
                 if world.state =~ 'display'
                     if world.state =~ '^display'
-                        let world.table = filter(range(1, len(world.base)), 'world.MatchBaseIdx(filter_format, v:val)')
+                        let world.table = filter(range(1, len(world.base)), 'world.MatchBaseIdx(world.filter_format, v:val)')
                         " TLogDBG 2
                         " TLogVAR world.table
                         let world.list  = map(copy(world.table), 'world.GetBaseItem(v:val)')
                         " TLogDBG 3
-                        let llen = len(world.list)
-                        if llen == 0 && !show_empty
+                        let world.llen = len(world.list)
+                        let world.index_width = len(world.llen)
+                        if world.llen == 0 && !world.show_empty
                             call world.ReduceFilter()
                             let world.offset = 1
                             continue
                         else
-                            if llen == 1
+                            if world.llen == 1
                                 let world.last_item = world.list[0]
-                                if pick_last_item
+                                if world.pick_last_item
                                     echom 'Pick last item: '. world.list[0]
                                     let world.prefidx = '1'
                                     throw 'pick'
@@ -153,54 +193,67 @@ function! tlib#input#List(type, ...) "{{{3
                         endif
                         " TLogDBG 4
                         if world.state == 'display'
-                            if world.idx == '' && llen < g:tlib_sortprefs_threshold && !world.FilterIsEmpty()
+                            if world.idx == '' && world.llen < g:tlib_sortprefs_threshold && !world.FilterIsEmpty()
                                 let s:world = world
-                                let pref    = sort(range(1, llen), 's:SortPrefs')
-                                let world.prefidx = get(pref, 0, 1)
+                                let pref    = sort(range(1, world.llen), 's:SortPrefs')
+                                let world.prefidx = get(pref, 0, world.initial_index)
                             else
-                                let world.prefidx = world.idx == '' ? 1 : world.idx
+                                let world.prefidx = world.idx == '' ? world.initial_index : world.idx
                             endif
                         endif
                         " TLogDBG 5
                         let dlist = copy(world.list)
-                        if !empty(display_format)
+                        if !empty(world.display_format)
+                            let display_format = world.display_format
                             call map(dlist, 'eval(call(function("printf"), world.FormatArgs(display_format, v:val)))')
                         endif
                         " TLogVAR world.prefidx
                         " TLogDBG 6
-                        let dlist = map(range(1, llen), 'printf("%0'. len(llen) .'d", v:val) .": ". dlist[v:val - 1]')
+                        let dlist = map(range(1, world.llen), 'printf("%0'. world.index_width .'d", v:val) .": ". dlist[v:val - 1]')
                     endif
                     " TLogDBG 7
-                    if world.prefidx > world.offset + winheight(0) - 1
-                        let world.offset = world.prefidx - winheight(0) + 1
-                    elseif world.prefidx < world.offset
-                        let world.offset = world.prefidx
-                    endif
+                    " TLogVAR world.prefidx, world.offset
+                    " TLogDBG (world.prefidx > world.offset + winheight(0) - 1)
+                    " if world.prefidx > world.offset + winheight(0) - 1
+                    "     let listtop = world.llen - winheight(0) + 1
+                    "     let listoff = world.prefidx - winheight(0) + 1
+                    "     let world.offset = min([listtop, listoff])
+                    "     TLogVAR world.prefidx
+                    "     TLogDBG len(list)
+                    "     TLogDBG winheight(0)
+                    "     TLogVAR listtop, listoff, world.offset
+                    " elseif world.prefidx < world.offset
+                    "     let world.offset = world.prefidx
+                    " endif
                     " TLogDBG 8
-                    call world.DisplayList(world.type, handlers, world.query .' (filter: '. world.DisplayFilter() .'; press "?" for help)', dlist)
+                    call world.DisplayList(world, world.query .' (filter: '. world.DisplayFilter() .'; press "?" for help)', dlist)
                     " TLogDBG 9
                     let world.state = ''
 
                 else
-                    if world.state == 'scroll'
-                        let world.prefidx = world.offset
-                    endif
-                    call world.DisplayList(world.type, handlers, '')
+                    " if world.state == 'scroll'
+                    "     let world.prefidx = world.offset
+                    " endif
+                    call world.DisplayList(world, '')
                     if world.state == 'help'
                         let world.state = 'display'
                     else
                         let world.state = ''
                     endif
                 endif
+                " TAssert IsNotEmpty(world.scratch)
                 let world.list_wnr = winnr()
 
-                " TLogVAR timeout
-                let c = tlib#char#Get(timeout)
+                " TLogVAR world.timeout
+                let c = tlib#char#Get(world.timeout)
                 if world.state != ''
                     " continue
                 elseif has_key(key_agents, c)
+                    let sr = @/
+                    let @/ = lastsearch
                     let world = call(key_agents[c], [world, world.GetSelectedItems(world.GetCurrentItem())])
                     call s:CheckAgentReturnValue(c, world)
+                    let @/ = sr
                     " continue
                 elseif c == 13
                     throw 'pick'
@@ -208,16 +261,17 @@ function! tlib#input#List(type, ...) "{{{3
                     let world.prefidx = matchstr(getline(v:mouse_lnum), '^\d\+\ze:')
                     if empty(world.prefidx)
                         " call feedkeys(c, 't')
-                        let c = tlib#char#Get(timeout)
+                        let c = tlib#char#Get(world.timeout)
                         let world.state = 'help'
                         continue
                     endif
                     throw 'pick'
                 elseif c >= 32
                     let world.state = 'display'
-                    if has_key(numeric_chars, c)
-                        let world.idx .= (c - numeric_chars[c])
-                        if len(world.idx) == len(llen)
+                    let numbase = get(world.numeric_chars, c, -99999)
+                    if numbase != -99999
+                        let world.idx .= (c - numbase)
+                        if len(world.idx) == world.index_width
                             let world.prefidx = world.idx
                             throw 'pick'
                         endif
@@ -238,30 +292,34 @@ function! tlib#input#List(type, ...) "{{{3
             finally
                 " TLogDBG 'finally 1'
                 if world.state =~ '\<suspend\>'
+                    " if !world.allow_suspend
+                    "     echom "Cannot be suspended"
+                    "     let world.state = 'redisplay'
+                    " endif
                 elseif !empty(world.list) && !empty(world.base)
                     " TLogVAR world.list
                     if empty(world.state)
                         " TLogVAR world.state
                         if stridx(world.type, 'i') != -1
-                            let rv = llen == 1 ? 1 : world.prefidx
+                            let world.rv = world.llen == 1 ? 1 : world.prefidx
                         else
-                            if llen == 1
-                                " TLogVAR llen
-                                let rv = world.list[0]
+                            if world.llen == 1
+                                " TLogVAR world.llen
+                                let world.rv = world.list[0]
                             elseif world.prefidx > 0
                                 " TLogVAR world.prefidx
-                                let rv = world.GetCurrentItem()
+                                let world.rv = world.GetCurrentItem()
                             endif
                         endif
                     endif
-                    for handler in post_handlers
+                    for handler in world.post_handlers
                         let state = get(handler, 'postprocess', '')
                         " TLogVAR handler
                         " TLogVAR state
                         " TLogVAR world.state
                         if state == world.state
                             let agent = handler.agent
-                            let [world, rv] = call(agent, [world, rv])
+                            let [world, world.rv] = call(agent, [world, world.rv])
                             call s:CheckAgentReturnValue(agent, world)
                         endif
                     endfor
@@ -276,31 +334,44 @@ function! tlib#input#List(type, ...) "{{{3
         " TLogVAR world.sel_idx
         " TLogVAR world.idx
         " TLogVAR world.prefidx
-        " TLogVAR rv
+        " TLogVAR world.rv
         if world.state =~ '\<suspend\>'
-        elseif !empty(return_agent)
-            return call(return_agent.return_agent, [world, rv])
+            " TLogVAR world.prefidx
+            " exec world.prefidx
+            return
+        elseif !empty(world.return_agent)
+            " TLogVAR world.return_agent
+            call world.CloseScratch()
+            " TAssert IsNotEmpty(world.scratch)
+            return call(world.return_agent, [world, world.GetSelectedItems(world.rv)])
+        elseif stridx(world.type, 'w') != -1
+            return world
         elseif stridx(world.type, 'm') != -1
-            return world.GetSelectedItems(rv)
+            return world.GetSelectedItems(world.rv)
         else
-            return rv
+            return world.rv
         endif
 
     finally
         let &statusline = statusline
         let &laststatus = laststatus
+        let @/          = lastsearch
         " TLogDBG 'finally 2'
         if world.state !~ '\<suspend\>'
+            " TLogVAR world.state, world.win_wnr, world.bufnr
             call world.CloseScratch()
-            exec world.win_wnr .'wincmd w'
+            call world.SwitchWindow('win')
+            " TLogVAR world.winview
+            call tlib#win#SetLayout(world.winview)
         endif
-        for i in range(0,5)
-            call getchar(0)
-        endfor
+        " for i in range(0,5)
+        "     call getchar(0)
+        " endfor
         echo
-        redraw
+        " redraw
     endtry
 endf
+
 
 function! s:AssessName(name) "{{{3
     let xa  = 0
@@ -332,6 +403,7 @@ function! s:AssessName(name) "{{{3
     return xa
 endf
 
+
 function! s:SortPrefs(a, b) "{{{3
     let a = s:world.GetItem(a:a)
     let b = s:world.GetItem(a:b)
@@ -352,6 +424,7 @@ function! s:SortPrefs(a, b) "{{{3
     return xa == xb ? 0 : xa < xb ? 1 : -1
 endf
 
+
 function! s:CheckAgentReturnValue(name, value) "{{{3
     if type(a:value) != 4 && !has_key(a:value, 'state')
         echoerr 'Malformed agent: '. a:name
@@ -359,28 +432,54 @@ function! s:CheckAgentReturnValue(name, value) "{{{3
     return a:value
 endf
 
-function! s:DisplayFormat(file) "{{{3
+
+function! s:FormatFilename(world, file) "{{{3
     let fname = fnamemodify(a:file, ":p:t")
     " let fname = fnamemodify(a:file, ":t")
     " if isdirectory(a:file)
     "     let fname .='/'
     " endif
     let dname = fnamemodify(a:file, ":h")
-    let dnmax = &co - max([20, len(fname)]) - 12 - &fdc
+    let dnmax = &co - max([g:tlib_inputlist_width_filename, len(fname)]) - 11 - a:world.index_width - &fdc
     if len(dname) > dnmax
         let dname = '...'. strpart(fnamemodify(a:file, ":h"), len(dname) - dnmax)
     endif
-    return printf("%-20s   %s", fname, dname)
+    let marker = []
+    let bnr    = bufnr(a:file)
+    " TLogVAR a:file, bnr, a:world.bufnr
+    if bnr != -1
+        if buflisted(a:file)
+            if getbufvar(a:file, "&mod")
+                call add(marker, '+')
+            elseif bnr == a:world.bufnr
+                call add(marker, '%')
+            else
+                call add(marker, 'B')
+            endif
+        elseif bufloaded(a:file)
+            call add(marker, 'b')
+        else
+            call add(marker, '-')
+        endif
+    else
+        call add(marker, ' ')
+    endif
+    if !empty(marker)
+        call insert(marker, '|')
+        call add(marker, '|')
+        " let fname .= ' '. join(marker, '')
+    endif
+    return printf("%-". g:tlib_inputlist_width_filename ."s %s %s", fname, join(marker, ''), dname)
 endf
 
 
 " Functions related to tlib#input#EditList(type, ...) "{{{2
 
-" function! tlib#input#EditList(query, list, ?timeout=0)
+" :def: function! tlib#input#EditList(query, list, ?timeout=0)
 " Edit a list.
 "
-" EXAMPLES:
-" echo tlib#input#EditList('Edit:', [100,200,300])
+" EXAMPLES: >
+"   echo tlib#input#EditList('Edit:', [100,200,300])
 function! tlib#input#EditList(query, list, ...) "{{{3
     let handlers = a:0 >= 1 ? a:1 : g:tlib_handlers_EditList
     let rv       = a:0 >= 2 ? a:2 : ''
@@ -390,4 +489,97 @@ function! tlib#input#EditList(query, list, ...) "{{{3
     return success ? list : a:list
 endf
 
+
+function! tlib#input#Resume(name) "{{{3
+    echo
+    if exists('b:tlib_suspend')
+        for m in b:tlib_suspend
+            exec 'unmap <buffer> '. m
+        endfor
+        unlet b:tlib_suspend
+    endif
+    let b:tlib_{a:name}.state = 'display'
+    " call tlib#input#List('resume '. a:name)
+    call tlib#input#ListW(b:tlib_{a:name}, 'resume '. a:name)
+endf
+
+
+" :def: function! tlib#input#CommandSelect(command, ?keyargs={})
+" Take a command, view the output, and let the user select an item from 
+" its output.
+"
+" EXAMPLE: >
+"     exec 'norm! `'. matchstr(tlib#input#CommandSelect('marks'), '^ \+\zs.')
+function! tlib#input#CommandSelect(command, ...) "{{{3
+    TVarArg ['args', {}]
+    if has_key(args, 'retrieve')
+        let list = call(args.retrieve)
+    elseif has_key(args, 'list')
+        let list = args.list
+    else
+        let list = tlib#cmd#OutputAsList(a:command)
+    endif
+    if has_key(args, 'filter')
+        call map(list, args.filter)
+    endif
+    let type     = has_key(args, 'type') ? args.type : 's'
+    let handlers = has_key(args, 'handlers') ? args.handlers : []
+    let rv = tlib#input#List(type, 'Select', list, handlers)
+    if !empty(rv)
+        if has_key(args, 'process')
+            let rv = call(args.process, [rv])
+        endif
+    endif
+    return rv
+endf
+
+
+" :def: function! tlib#input#Edit(name, value, callback, ?cb_args=[])
+"
+" Edit value in a scratch buffer. Use name for identification. Call 
+" callback when done (or on cancel).
+" In the scratch buffer:
+" Press <c-s> to enter, <c-w>c to cancel editing.
+" EXAMPLES: >
+"   fun! FooContinue(success, text)
+"       if a:success
+"           let b:var = a:text
+"       endif
+"   endf
+"   call tlib#input#Edit('foo', b:var, 'FooContinue')
+function! tlib#input#Edit(name, value, callback, ...) "{{{3
+    " TLogVAR a:value
+    TVarArg ['args', []]
+    let sargs = {'scratch': '__EDIT__'. a:name .'__'}
+    let scr = tlib#scratch#UseScratch(sargs)
+    map <buffer> <c-w>c :call <SID>EditCallback(0)<cr>
+    imap <buffer> <c-w>c <c-o>call <SID>EditCallback(0)<cr>
+    map <buffer> <c-s> :call <SID>EditCallback(1)<cr>
+    imap <buffer> <c-s> <c-o>call <SID>EditCallback(1)<cr>
+    echohl MoreMsg
+    echom 'Press <c-s> to enter, <c-w>c to cancel editing.'
+    echohl NONE
+    norm! ggdG
+    call append(1, split(a:value, "\<c-j>", 1))
+    norm! ggdd
+    let b:tlib_scratch_edit_callback = a:callback
+    let b:tlib_scratch_edit_args     = args
+    let b:tlib_scratch_edit_scratch  = sargs
+    " exec 'autocmd BufDelete,BufHidden,BufUnload <buffer> call s:EditCallback('. string(a:name) .')'
+endf
+
+
+function! s:EditCallback(...) "{{{3
+    TVarArg ['ok', -1]
+    " , ['bufnr', -1]
+    " autocmd! BufDelete,BufHidden,BufUnload <buffer>
+    if ok == -1
+        let ok = confirm('Use value')
+    endif
+    let text = ok ? join(getline(1, '$'), "\n") : ''
+    let cb   = b:tlib_scratch_edit_callback
+    let args = b:tlib_scratch_edit_args
+    call tlib#scratch#CloseScratch(b:tlib_scratch_edit_scratch)
+    call call(cb, args + [ok, text])
+endf
 

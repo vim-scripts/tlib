@@ -3,35 +3,37 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-06-30.
-" @Revision:    0.0.5
+" @Last Change: 2007-07-29.
+" @Revision:    0.0.17
 
 if &cp || exists("loaded_tlib_var_autoload")
     finish
 endif
 let loaded_tlib_var_autoload = 1
 
-" tlib#var#Let(name, val)
+
 " Define a variable called NAME if yet undefined.
 " You can also use the :TLLet command.
 "
-" EXAMPLES:
-" exec tlib#var#Let('g:foo', 1)
-" TLLet 'g:foo', 1
+" EXAMPLES: >
+"   exec tlib#var#Let('g:foo', 1)
+"   TLet g:foo = 1
 function! tlib#var#Let(name, val) "{{{3
     return printf('if !exists(%s) | let %s = %s | endif', string(a:name), a:name, string(a:val))
+    " return printf('if !exists(%s) | let %s = %s | endif', string(a:name), a:name, a:val)
 endf
 
-" tlib#var#EGet(var, namespace, ?default='')
+
+" :def: function! tlib#var#EGet(var, namespace, ?default='')
 " Retrieve a variable by searching several namespaces.
 "
-" EXAMPLES:
-" let g:foo = 1
-" let b:foo = 2
-" let w:foo = 3
-" echo eval(tlib#var#EGet('foo', 'vg'))  => 1
-" echo eval(tlib#var#EGet('foo', 'bg'))  => 2
-" echo eval(tlib#var#EGet('foo', 'wbg')) => 3
+" EXAMPLES: >
+"   let g:foo = 1
+"   let b:foo = 2
+"   let w:foo = 3
+"   echo eval(tlib#var#EGet('foo', 'vg'))  => 1
+"   echo eval(tlib#var#EGet('foo', 'bg'))  => 2
+"   echo eval(tlib#var#EGet('foo', 'wbg')) => 3
 function! tlib#var#EGet(var, namespace, ...) "{{{3
     let pre  = []
     let post = []
@@ -44,16 +46,17 @@ function! tlib#var#EGet(var, namespace, ...) "{{{3
     return join(pre) . string(default) . join(post)
 endf
 
-" tlib#var#Get(var, namespace, ?default='')
+
+" :def: function! tlib#var#Get(var, namespace, ?default='')
 " Retrieve a variable by searching several namespaces.
 "
-" EXAMPLES:
-" let g:foo = 1
-" let b:foo = 2
-" let w:foo = 3
-" echo tlib#var#Get('foo', 'vg')  => 1
-" echo tlib#var#Get('foo', 'bg')  => 2
-" echo tlib#var#Get('foo', 'wbg') => 3
+" EXAMPLES: >
+"   let g:foo = 1
+"   let b:foo = 2
+"   let w:foo = 3
+"   echo tlib#var#Get('foo', 'vg')  => 1
+"   echo tlib#var#Get('foo', 'bg')  => 2
+"   echo tlib#var#Get('foo', 'wbg') => 3
 function! tlib#var#Get(var, namespace, ...) "{{{3
     for namespace in split(a:namespace, '\zs')
         let var = namespace .':'. a:var

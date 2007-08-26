@@ -3,22 +3,36 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-07-18.
-" @Last Change: 2007-07-18.
-" @Revision:    0.0.3
+" @Last Change: 2007-08-25.
+" @Revision:    0.0.107
 
 if &cp || exists("loaded_tlib_scratch_autoload")
     finish
 endif
 let loaded_tlib_scratch_autoload = 1
 
-function! tlib#scratch#UseScratch(keyargs) "{{{3
-    let id = get(a:keyargs, 'scratch', '__InputList__')
-    if id =~ '^\d\+$'
+
+" :def: function! tlib#scratch#UseScratch(?keyargs={})
+" Display a scratch buffer (a buffer with no file). See :TScratch for an 
+" example.
+" Return the scratch's buffer number.
+function! tlib#scratch#UseScratch(...) "{{{3
+    exec tlib#arg#Let([['keyargs', {}]])
+    " TLogDBG string(keys(keyargs))
+    let id = get(keyargs, 'scratch', '__Scratch__')
+    " TLogVAR id
+    " TLogDBG winnr()
+    " TLogDBG bufnr('%')
+    if id =~ '^\d\+$' && bufwinnr(id) != -1
         if bufnr('%') != id
             exec 'buffer! '. id
         endif
     else
         let bn = bufnr(id)
+        let wpos = g:tlib_scratch_pos
+        if get(keyargs, 'scratch_vertical')
+            let wpos .= ' vertical'
+        endif
         if bn != -1
             " TLogVAR bn
             let wn = bufwinnr(bn)
@@ -26,12 +40,14 @@ function! tlib#scratch#UseScratch(keyargs) "{{{3
                 " TLogVAR wn
                 exec wn .'wincmd w'
             else
-                let cmd = get(a:keyargs, 'scratch_split', 1) ? 'botright sbuffer! ' : 'buffer! '
+                let cmd = get(keyargs, 'scratch_split', 1) ? wpos.' sbuffer! ' : 'buffer! '
+                " TLogVAR cmd
                 silent exec cmd . bn
             endif
         else
             " TLogVAR id
-            let cmd = get(a:keyargs, 'scratch_split', 1) ? 'botright split ' : 'edit '
+            let cmd = get(keyargs, 'scratch_split', 1) ? wpos.' split ' : 'edit '
+            " TLogVAR cmd
             silent exec cmd . escape(id, '%#\ ')
             " silent exec 'split '. id
         endif
@@ -41,25 +57,36 @@ function! tlib#scratch#UseScratch(keyargs) "{{{3
         setlocal nobuflisted
         setlocal modifiable
         setlocal foldmethod=manual
-        set ft=tlibInputList
+        let ft = get(keyargs, 'scratch_filetype', '')
+        " TLogVAR ft
+        " if !empty(ft)
+            let &ft=ft
+        " end
     endif
-    let a:keyargs.scratch = bufnr('%')
-    return a:keyargs.scratch
+    let keyargs.scratch = bufnr('%')
+    return keyargs.scratch
 endf
 
-function! tlib#scratch#CloseScratch(keyargs) "{{{3
+
+" Close a scratch buffer as defined in keyargs (usually a World).
+function! tlib#scratch#CloseScratch(keyargs, ...) "{{{3
+    TVarArg ['reset_scratch', 1]
     let scratch = get(a:keyargs, 'scratch', '')
-    " TLogVAR scratch
+    " TLogVAR scratch, reset_scratch
     if !empty(scratch)
         let wn = bufwinnr(scratch)
+        " TLogVAR wn
         if wn != -1
-            " TLogVAR wn
-            exec wn .'wincmd w'
+            " TLogDBG winnr()
+            let wb = tlib#win#SetWin(wn)
             wincmd c
+            " exec wb 
             " redraw
+            " TLogDBG winnr()
         endif
-        unlet a:keyargs.scratch
+        if reset_scratch
+            let a:keyargs.scratch = ''
+        endif
     endif
 endf
-
 

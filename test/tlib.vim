@@ -3,15 +3,18 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2006-12-17.
-" @Last Change: 2007-07-18.
-" @Revision:    97
+" @Last Change: 2007-08-04.
+" @Revision:    115
 
 if !exists("loaded_tassert")
     echoerr 'tAssert (vimscript #1730) is required'
 endif
 
-TAssertBegin! "tlib", 'autoload/tlib.vim'
 
+TAssertBegin! "tlib"
+
+
+" List {{{2
 fun! Add(a,b)
     return a:a + a:b
 endf
@@ -43,16 +46,13 @@ TAssert IsEqual(tlib#list#All([1,2,3], 'v:val >= 2'), 0)
 TAssert IsEqual(tlib#list#Remove([1,2,1,2], 2), [1,1,2])
 TAssert IsEqual(tlib#list#RemoveAll([1,2,1,2], 2), [1,1])
 
-" TAssert IsEqual(TFind([], '%s == 2'), '')
-" TAssert IsEqual(TFind([], '%s == 2', 'X'), 'X')
-" TAssert IsEqual(TFind([1,2,3], '%s == 2'), 2)
-" TAssert IsEqual(TFind([0,[1,2,[3,""]]], '%s == 2'), '')
+TAssert IsEqual(tlib#list#Zip([[1,2,3], [4,5,6]]), [[1,4], [2,5], [3,6]])
+TAssert IsEqual(tlib#list#Zip([[1,2,3], [4,5,6,7]]), [[1,4], [2,5], [3,6], ['', 7]])
+TAssert IsEqual(tlib#list#Zip([[1,2,3], [4,5,6,7]], -1), [[1,4], [2,5], [3,6], [-1,7]])
+TAssert IsEqual(tlib#list#Zip([[1,2,3,7], [4,5,6]], -1), [[1,4], [2,5], [3,6], [7,-1]])
 
-" TAssert IsEqual(TFindValue([], '%s == 2'), '0')
-" TAssert IsEqual(TFindValue([], '%s == 2', 'X'), 'X')
-" TAssert IsEqual(TFindValue([1,2,3], '%s == 2'), 1)
-" TAssert IsEqual(TFindValue([0,[1,2,[3,""]]], '%s == 2'), '0')
 
+" Vars {{{2
 let g:foo = 1
 let g:bar = 2
 let b:bar = 3
@@ -75,6 +75,9 @@ unlet g:foo
 unlet g:bar
 unlet b:bar
 
+
+
+" Filenames {{{2
 TAssert IsEqual(tlib#file#Split('foo/bar/filename.txt'), ['foo', 'bar', 'filename.txt'])
 TAssert IsEqual(tlib#file#Split('/foo/bar/filename.txt'), ['', 'foo', 'bar', 'filename.txt'])
 TAssert IsEqual(tlib#file#Split('ftp://foo/bar/filename.txt'), ['ftp:/', 'foo', 'bar', 'filename.txt'])
@@ -91,6 +94,9 @@ TAssert IsEqual(tlib#file#Relative('/bar/filename.txt', '/boo/base'), '../../bar
 TAssert IsEqual(tlib#file#Relative('/foo/bar/filename.txt', '/base'), '../foo/bar/filename.txt')
 TAssert IsEqual(tlib#file#Relative('c:/bar/filename.txt', 'x:/boo/base'), 'c:/bar/filename.txt')
 
+
+
+" Prototype-based programming {{{2
 let test = tlib#Test#New()
 TAssert test.IsA('Test')
 TAssert !test.IsA('foo')
@@ -106,6 +112,8 @@ TAssert IsEqual(testc.Dummy(), 'TestChild.vim')
 TAssert IsEqual(testc.Super('Dummy', []), 'Test.vim')
 
 
+
+" Optional arguments {{{2
 function! TestGetArg(...) "{{{3
     exec tlib#arg#Get(1, 'foo', 1)
     return foo
@@ -147,22 +155,49 @@ TAssert IsEqual(TestArgs2(), '1')
 TAssert IsEqual(TestArgs2('a'), 'a')
 TAssert IsEqual(TestArgs2('a', 3), 'aaa')
 
+function! TestArgs3(...)
+    TVarArg ['a', 1], 'b'
+    return a . b
+endf
+TAssert IsEqual(TestArgs3(), '1')
+TAssert IsEqual(TestArgs3('a'), 'a')
+TAssert IsEqual(TestArgs3('a', 3), 'a3')
+
 delfunction TestGetArg
 delfunction TestGetArg1
 delfunction TestArgs
 delfunction TestArgs1
+delfunction TestArgs2
+delfunction TestArgs3
 
+
+
+" Strings {{{2
 TAssert IsString(tlib#string#RemoveBackslashes('foo bar'))
 TAssert IsEqual(tlib#string#RemoveBackslashes('foo bar'), 'foo bar')
 TAssert IsEqual(tlib#string#RemoveBackslashes('foo\ bar'), 'foo bar')
 TAssert IsEqual(tlib#string#RemoveBackslashes('foo\ \\bar'), 'foo \\bar')
 TAssert IsEqual(tlib#string#RemoveBackslashes('foo\ \\bar', '\ '), 'foo \bar')
 
+
+
+" Regexp {{{2
+for c in split('^$.*+\()|{}[]~', '\zs')
+    let s = printf('%sfoo%sbar%s', c, c, c)
+    TAssert (s =~ '\m^'. tlib#rx#Escape(s, 'm') .'$')
+    TAssert (s =~ '\M^'. tlib#rx#Escape(s, 'M') .'$')
+    TAssert (s =~ '\v^'. tlib#rx#Escape(s, 'v') .'$')
+    TAssert (s =~ '\V\^'. tlib#rx#Escape(s, 'V') .'\$')
+endfor
+
+
 TAssertEnd test test1 testc testworld
 
 
-finish
+finish "{{{1
 
+
+" Input {{{2
 echo tlib#input#List('s', 'Test', ['barfoobar', 'barFoobar'])
 echo tlib#input#List('s', 'Test', ['barfoobar', 'bar foo bar', 'barFoobar'])
 echo tlib#input#List('s', 'Test', ['barfoobar', 'bar1Foo1bar', 'barFoobar'])

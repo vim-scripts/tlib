@@ -3,20 +3,21 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-06-30.
-" @Revision:    0.0.2
+" @Last Change: 2007-07-29.
+" @Revision:    0.0.10
 
 if &cp || exists("loaded_tlib_char_autoload")
     finish
 endif
 let loaded_tlib_char_autoload = 1
 
-" tlib#char#Get(?timeout=0)
+
+" :def: function! tlib#char#Get(?timeout=0)
 " Get a character.
 "
-" EXAMPLES:
-" echo tlib#char#Get()
-" echo tlib#char#Get(5)
+" EXAMPLES: >
+"   echo tlib#char#Get()
+"   echo tlib#char#Get(5)
 function! tlib#char#Get(...) "{{{3
     let timeout = a:0 >= 1 ? a:1 : 0
     if timeout == 0
@@ -34,6 +35,5 @@ function! tlib#char#Get(...) "{{{3
     endif
     return -1
 endf
-
 
 

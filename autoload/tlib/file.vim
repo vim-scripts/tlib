@@ -1,10 +1,10 @@
 " file.vim
-" @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-08-21.
-" @Revision:    0.0.34
+" @Last Change: 2007-09-02.
+" @Revision:    0.0.39
 
 if &cp || exists("loaded_tlib_file_autoload")
     finish
@@ -40,6 +40,9 @@ endf
 "   tlib#file#Join(['foo', 'bar', 'filename.txt'])
 "   => 'foo/bar/filename.txt'
 function! tlib#file#Join(filename_parts) "{{{3
+    " let rx    = tlib#rx#Escape(g:tlib_filename_sep) .'$'
+    " let parts = map(copy(a:filename_parts), 'substitute(v:val, rx, "", "")')
+    " return join(parts, g:tlib_filename_sep)
     return join(a:filename_parts, g:tlib_filename_sep)
 endf
 

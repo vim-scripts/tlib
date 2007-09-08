@@ -1,10 +1,10 @@
 " input.vim
-" @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-08-25.
-" @Revision:    0.0.267
+" @Last Change: 2007-09-02.
+" @Revision:    0.0.323
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -74,7 +74,8 @@ function! tlib#input#List(type, ...) "{{{3
         endif
         let world.scratch_vertical = tlib#list#Find(handlers, 'has_key(v:val, "scratch_vertical")', 0, 'v:val.scratch_vertical')
         call world.Set_display_format(tlib#list#Find(handlers, 'has_key(v:val, "display_format")', '', 'v:val.display_format'))
-        let world.initial_index = tlib#list#Find(handlers, 'has_key(v:val, "initial_index")', 1, 'v:val.initial_index')
+        let world.initial_index    = tlib#list#Find(handlers, 'has_key(v:val, "initial_index")', 1, 'v:val.initial_index')
+        let world.index_table      = tlib#list#Find(handlers, 'has_key(v:val, "index_table")', [], 'v:val.index_table')
         let world.state_handlers   = filter(copy(handlers), 'has_key(v:val, "state")')
         let world.post_handlers    = filter(copy(handlers), 'has_key(v:val, "postprocess")')
         let world.filter_format    = tlib#list#Find(handlers, 'has_key(v:val, "filter_format")', '', 'v:val.filter_format')
@@ -174,7 +175,14 @@ function! tlib#input#ListW(world, ...) "{{{3
                         let world.list  = map(copy(world.table), 'world.GetBaseItem(v:val)')
                         " TLogDBG 3
                         let world.llen = len(world.list)
-                        let world.index_width = len(world.llen)
+                        " TLogVAR world.index_table
+                        if empty(world.index_table)
+                            let dindex = range(1, world.llen)
+                            let world.index_width = len(world.llen)
+                        else
+                            let dindex = world.index_table
+                            let world.index_width = len(max(dindex))
+                        endif
                         if world.llen == 0 && !world.show_empty
                             call world.ReduceFilter()
                             let world.offset = 1
@@ -200,6 +208,11 @@ function! tlib#input#ListW(world, ...) "{{{3
                             else
                                 let world.prefidx = world.idx == '' ? world.initial_index : world.idx
                             endif
+                            if world.prefidx > world.llen
+                                let world.prefidx = world.llen
+                            elseif world.prefidx < 1
+                                let world.prefidx = 1
+                            endif
                         endif
                         " TLogDBG 5
                         let dlist = copy(world.list)
@@ -209,7 +222,11 @@ function! tlib#input#ListW(world, ...) "{{{3
                         endif
                         " TLogVAR world.prefidx
                         " TLogDBG 6
-                        let dlist = map(range(1, world.llen), 'printf("%0'. world.index_width .'d", v:val) .": ". dlist[v:val - 1]')
+                        if world.offset_horizontal > 0
+                            call map(dlist, 'v:val[world.offset_horizontal:-1]')
+                        endif
+                        " TLogVAR dindex
+                        let dlist = map(range(0, world.llen - 1), 'printf("%0'. world.index_width .'d", dindex[v:val]) .": ". dlist[v:val]')
                     endif
                     " TLogDBG 7
                     " TLogVAR world.prefidx, world.offset
@@ -348,6 +365,8 @@ function! tlib#input#ListW(world, ...) "{{{3
             return world
         elseif stridx(world.type, 'm') != -1
             return world.GetSelectedItems(world.rv)
+        elseif stridx(world.type, 'i') != -1 && !empty(world.index_table)
+            return world.index_table[world.rv - 1]
         else
             return world.rv
         endif
@@ -440,7 +459,7 @@ function! s:FormatFilename(world, file) "{{{3
     "     let fname .='/'
     " endif
     let dname = fnamemodify(a:file, ":h")
-    let dnmax = &co - max([g:tlib_inputlist_width_filename, len(fname)]) - 11 - a:world.index_width - &fdc
+    let dnmax = &co - max([eval(g:tlib_inputlist_width_filename), len(fname)]) - 11 - a:world.index_width - &fdc
     if len(dname) > dnmax
         let dname = '...'. strpart(fnamemodify(a:file, ":h"), len(dname) - dnmax)
     endif
@@ -469,7 +488,7 @@ function! s:FormatFilename(world, file) "{{{3
         call add(marker, '|')
         " let fname .= ' '. join(marker, '')
     endif
-    return printf("%-". g:tlib_inputlist_width_filename ."s %s %s", fname, join(marker, ''), dname)
+    return printf("%-". eval(g:tlib_inputlist_width_filename) ."s %s %s", fname, join(marker, ''), dname)
 endf
 
 
@@ -556,16 +575,25 @@ function! tlib#input#Edit(name, value, callback, ...) "{{{3
     imap <buffer> <c-w>c <c-o>call <SID>EditCallback(0)<cr>
     map <buffer> <c-s> :call <SID>EditCallback(1)<cr>
     imap <buffer> <c-s> <c-o>call <SID>EditCallback(1)<cr>
-    echohl MoreMsg
-    echom 'Press <c-s> to enter, <c-w>c to cancel editing.'
-    echohl NONE
     norm! ggdG
     call append(1, split(a:value, "\<c-j>", 1))
+    " let hrm = 'DON''T DELETE THIS HEADER'
+    " let hr3 = repeat('"', (tlib#win#Width(0) - len(hrm)) / 2)
+    let s:horizontal_line = repeat('`', tlib#win#Width(0))
+    " hr3.hrm.hr3
+    let hd  = ['``` Keys: <c-s> ... save/accept; <c-w>c ... cancel', s:horizontal_line]
+    call append(1, hd)
     norm! ggdd
+    syntax match TlibEditComment /^```.*/
+    hi link TlibEditComment Comment
+    exec len(hd) + 1
     let b:tlib_scratch_edit_callback = a:callback
     let b:tlib_scratch_edit_args     = args
     let b:tlib_scratch_edit_scratch  = sargs
     " exec 'autocmd BufDelete,BufHidden,BufUnload <buffer> call s:EditCallback('. string(a:name) .')'
+    " echohl MoreMsg
+    " echom 'Press <c-s> to enter, <c-w>c to cancel editing.'
+    " echohl NONE
 endf
 
 
@@ -576,7 +604,8 @@ function! s:EditCallback(...) "{{{3
     if ok == -1
         let ok = confirm('Use value')
     endif
-    let text = ok ? join(getline(1, '$'), "\n") : ''
+    let start = getline(2) == s:horizontal_line ? 3 : 1
+    let text = ok ? join(getline(start, '$'), "\n") : ''
     let cb   = b:tlib_scratch_edit_callback
     let args = b:tlib_scratch_edit_args
     call tlib#scratch#CloseScratch(b:tlib_scratch_edit_scratch)

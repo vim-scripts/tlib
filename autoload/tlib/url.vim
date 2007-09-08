@@ -1,10 +1,10 @@
 " url.vim
-" @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-07-25.
-" @Revision:    0.0.4
+" @Last Change: 2007-09-01.
+" @Revision:    0.0.12
 
 if &cp || exists("loaded_tlib_url_autoload")
     finish
@@ -59,8 +59,13 @@ endf
 
 
 " Encode an url.
-function! tlib#url#Encode(url) "{{{3
-    return substitute(a:url, '\([^a-zA-Z0-9_.-]\)', '\=tlib#url#EncodeChar(submatch(1))', 'g')
+function! tlib#url#Encode(url, ...) "{{{3
+    TVarArg ['extrachars', '']
+    let rx = '\([^a-zA-Z0-9_.'. extrachars .'-]\)'
+    " TLogVAR a:url, rx
+    let rv = substitute(a:url, rx, '\=tlib#url#EncodeChar(submatch(1))', 'g')
+    " TLogVAR rv
+    return rv
 endf
 
 

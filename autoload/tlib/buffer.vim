@@ -1,10 +1,10 @@
 " buffer.vim
-" @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-08-24.
-" @Revision:    0.0.47
+" @Last Change: 2007-09-02.
+" @Revision:    0.0.58
 
 if &cp || exists("loaded_tlib_buffer_autoload")
     finish
@@ -91,8 +91,14 @@ function! tlib#buffer#GetList(...)
     redir END
     let buffer_list = split(bfs, '\n')
     let buffer_nr = map(copy(buffer_list), 'matchstr(v:val, ''\s*\zs\d\+\ze'')')
+    " TLogVAR buffer_list
     call map(buffer_list, 'matchstr(v:val, ''\s*\d\+\zs.\{-}\ze\s\+line \d\+\s*$'')')
+    " call map(buffer_list, 'matchstr(v:val, ''\s*\d\+.\{-}\ze\s\+line \d\+\s*$'')')
+    " TLogVAR buffer_list
+    " call map(buffer_list, 'matchstr(v:val, ''^.\{-}\ze\s\+line \d\+\s*$'')')
+    " TLogVAR buffer_list
     call map(buffer_list, 'matchstr(v:val, ''^[^"]\+''). printf("%-20s   %s", fnamemodify(matchstr(v:val, ''"\zs.\{-}\ze"$''), ":t"), fnamemodify(matchstr(v:val, ''"\zs.\{-}\ze"$''), ":h"))')
+    " TLogVAR buffer_list
     return [buffer_nr, buffer_list]
 endf
 

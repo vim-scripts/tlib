@@ -1,10 +1,10 @@
 " scratch.vim
-" @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-07-18.
-" @Last Change: 2007-08-25.
-" @Revision:    0.0.107
+" @Last Change: 2007-08-27.
+" @Revision:    0.0.109
 
 if &cp || exists("loaded_tlib_scratch_autoload")
     finish
@@ -78,7 +78,7 @@ function! tlib#scratch#CloseScratch(keyargs, ...) "{{{3
         " TLogVAR wn
         if wn != -1
             " TLogDBG winnr()
-            let wb = tlib#win#SetWin(wn)
+            let wb = tlib#win#Set(wn)
             wincmd c
             " exec wb 
             " redraw

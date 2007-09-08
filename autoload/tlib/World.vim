@@ -1,10 +1,10 @@
 " World.vim -- The World prototype for tlib#input#List()
-" @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-08-26.
-" @Revision:    0.1.259
+" @Last Change: 2007-09-02.
+" @Revision:    0.1.305
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -25,11 +25,14 @@ let s:prototype = tlib#Object#New({
             \ 'bufnr': -1,
             \ 'display_format': '',
             \ 'filter_format': '',
+            \ 'index_table': [],
             \ 'initial_index': 1,
             \ 'initialized': 0,
             \ 'key_handlers': [],
             \ 'list': [], 
             \ 'numeric_chars': tlib#var#Get('tlib_numeric_chars', 'bg'),
+            \ 'offset': 1,
+            \ 'offset_horizontal': 0,
             \ 'pick_last_item': tlib#var#Get('tlib_pick_last_item', 'bg'),
             \ 'post_handlers': [],
             \ 'query': '',
@@ -61,8 +64,8 @@ function! s:prototype.Set_display_format(value) dict "{{{3
     if a:value == 'filename'
         let self.display_format = 's:FormatFilename(world, %s)'
         let self.tlib_UseInputListScratch = 
-                    \ 'syn match TLibMarker /\%>'. (2 + g:tlib_inputlist_width_filename) .'c |.\{-}| / | hi def link TLibMarker Special'
-        let self.tlib_UseInputListScratch .= '| syn match TLibDir /\%>'. (4 + g:tlib_inputlist_width_filename) .'c\S\{-}[\/].*$/ | hi def link TLibDir Directory'
+                    \ 'syn match TLibMarker /\%>'. (2 + eval(g:tlib_inputlist_width_filename)) .'c |.\{-}| / | hi def link TLibMarker Special'
+        let self.tlib_UseInputListScratch .= '| syn match TLibDir /\%>'. (4 + eval(g:tlib_inputlist_width_filename)) .'c\S\{-}[\/].*$/ | hi def link TLibDir Directory'
     else
         let self.display_format = a:value
     endif
@@ -81,6 +84,13 @@ function! s:prototype.GetSelectedItems(current) dict "{{{3
             call remove(rv, ci)
         endif
         call insert(rv, a:current)
+    endif
+    if stridx(self.type, 'i') != -1
+        if !empty(self.index_table)
+            " TLogVAR rv, self.index_table
+            call map(rv, 'self.index_table[v:val - 1]')
+            " TLogVAR rv
+        endif
     endif
     return rv
 endf
@@ -143,12 +153,21 @@ endf
 
 
 function! s:prototype.GetListIdx(baseidx) dict "{{{3
-    return index(self.table, a:baseidx)
+    " if empty(self.index_table)
+        let baseidx = a:baseidx
+    " else
+    "     let baseidx = 0 + self.index_table[a:baseidx - 1]
+    "     " TLogVAR a:baseidx, baseidx, self.index_table 
+    " endif
+    let rv = index(self.table, baseidx)
+    " TLogVAR rv, self.table
+    return rv
 endf
 
 
 function! s:prototype.GetBaseIdx(idx) dict "{{{3
-    if !empty(self.table) && a:idx > 0
+    " TLogVAR a:idx, self.table, self.index_table
+    if !empty(self.table) && a:idx > 0 && a:idx <= len(self.table)
         return self.table[a:idx - 1]
     else
         return ''
@@ -398,8 +417,10 @@ function! s:prototype.DisplayList(world, query, ...) dict "{{{3
     elseif self.state == 'help'
         call self.DisplayHelp(a:world)
     else
-        let ll = len(list)
-        let x  = len(ll) + 1
+        " let ll = len(list)
+        let ll = a:world.llen
+        " let x  = len(ll) + 1
+        let x  = a:world.index_width + 1
         " TLogVAR ll
         if self.state =~ '\<display\>'
             let resize = get(self, 'resize', 0)
@@ -411,7 +432,8 @@ function! s:prototype.DisplayList(world, query, ...) dict "{{{3
             norm! ggdG
             let w = winwidth(0) - &fdc
             " let w = winwidth(0) - &fdc - 1
-            let lines = map(copy(list), 'printf("%-'. w .'.'. w .'s", substitute(v:val, ''[[:cntrl:][:space:]]'', " ", "g"))')
+            let lines = copy(list)
+            let lines = map(lines, 'printf("%-'. w .'.'. w .'s", substitute(v:val, ''[[:cntrl:][:space:]]'', " ", "g"))')
             call append(0, lines)
             norm! Gddgg
         endif
@@ -462,6 +484,9 @@ function! s:prototype.SetOffset() dict "{{{3
     " TLogDBG winheight(0)
     " TLogDBG self.prefidx > self.offset + winheight(0) - 1
     let listtop = len(self.list) - winheight(0) + 1
+    if listtop < 1
+        let listtop = 1
+    endif
     if self.prefidx > listtop
         let self.offset = listtop
     elseif self.prefidx > self.offset + winheight(0) - 1
@@ -474,6 +499,7 @@ function! s:prototype.SetOffset() dict "{{{3
     elseif self.prefidx < self.offset
         let self.offset = self.prefidx
     endif
+    " TLogVAR self.offset
 endf
 
 
@@ -496,7 +522,7 @@ endf
 function! s:prototype.SwitchWindow(where) dict "{{{3
     let wnr = get(self, a:where.'_wnr')
     " TLogVAR wnr
-    return tlib#win#SetWin(wnr)
+    return tlib#win#Set(wnr)
 endf
 
 

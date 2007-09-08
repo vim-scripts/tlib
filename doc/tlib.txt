@@ -1,6 +1,6 @@
-*tlib.txt*              tlib -- A library of vim functions
+*tlib.txt*  tlib -- A library of vim functions
+            Author: Thomas Link, micathom at gmail com
 
-Author: Thomas Link, samul AT web.de
 
 This library provides some utility functions. There isn't much need to 
 install it unless another plugin requires you to do so.
@@ -52,6 +52,7 @@ Contents~
         prototype.IsRelated
         prototype.RespondTo
         prototype.Super
+        prototype.Methods
     autoload/tlib/World.vim
         tlib#World#New ..................... |tlib#World#New|
         prototype.Set_display_format
@@ -93,6 +94,8 @@ Contents~
         tlib#agent#Down .................... |tlib#agent#Down|
         tlib#agent#UpN ..................... |tlib#agent#UpN|
         tlib#agent#DownN ................... |tlib#agent#DownN|
+        tlib#agent#ShiftLeft ............... |tlib#agent#ShiftLeft|
+        tlib#agent#ShiftRight .............. |tlib#agent#ShiftRight|
         tlib#agent#Reset ................... |tlib#agent#Reset|
         tlib#agent#Input ................... |tlib#agent#Input|
         tlib#agent#SuspendToParentWindow ... |tlib#agent#SuspendToParentWindow|
@@ -144,8 +147,10 @@ Contents~
         tlib#char#Get ...................... |tlib#char#Get|
     autoload/tlib/cmd.vim
         tlib#cmd#OutputAsList .............. |tlib#cmd#OutputAsList|
+        tlib#cmd#UseVertical ............... |tlib#cmd#UseVertical|
     autoload/tlib/dir.vim
         tlib#dir#CanonicName ............... |tlib#dir#CanonicName|
+        tlib#dir#PlainName ................. |tlib#dir#PlainName|
         tlib#dir#Ensure .................... |tlib#dir#Ensure|
         tlib#dir#MyRuntime ................. |tlib#dir#MyRuntime|
         tlib#dir#CD ........................ |tlib#dir#CD|
@@ -183,6 +188,10 @@ Contents~
         tlib#scratch#CloseScratch .......... |tlib#scratch#CloseScratch|
     autoload/tlib/string.vim
         tlib#string#RemoveBackslashes ...... |tlib#string#RemoveBackslashes|
+    autoload/tlib/tab.vim
+        tlib#tab#BufMap .................... |tlib#tab#BufMap|
+        tlib#tab#TabWinNr .................. |tlib#tab#TabWinNr|
+        tlib#tab#Set ....................... |tlib#tab#Set|
     autoload/tlib/url.vim
         tlib#url#Decode .................... |tlib#url#Decode|
         tlib#url#EncodeChar ................ |tlib#url#EncodeChar|
@@ -192,9 +201,10 @@ Contents~
         tlib#var#EGet ...................... |tlib#var#EGet|
         tlib#var#Get ....................... |tlib#var#Get|
     autoload/tlib/win.vim
-        tlib#win#SetWin .................... |tlib#win#SetWin|
+        tlib#win#Set ....................... |tlib#win#Set|
         tlib#win#GetLayout ................. |tlib#win#GetLayout|
         tlib#win#SetLayout ................. |tlib#win#SetLayout|
+        tlib#win#Width ..................... |tlib#win#Width|
 
 
 ------------------------------------------------------------------------
@@ -212,6 +222,10 @@ plugin/02tlib.vim~
     Open a scratch buffer (a buffer without a file). >
       TScratch  ... use split window
       TScratch! ... use the whole frame
+    This command takes an (inner) dictionnary as optional argument.
+    EXAMPLES: >
+      TScratch 'scratch': '__FOO__'
+      => Open a scratch buffer named __FOO__
 <
 
                                                     *:TVarArg*
@@ -244,7 +258,7 @@ g:tlib_inputlist_pct           (default: 70)
     Size of the input list window (in percent) from the main size (of &lines).
 
                                                     *g:tlib_inputlist_width_filename*
-g:tlib_inputlist_width_filename (default: &co / 3)
+g:tlib_inputlist_width_filename (default: '&co / 3')
     Size of filename columns when listing filenames
 
                                                     *g:tlib_inputlist_higroup*
@@ -363,6 +377,9 @@ prototype.RespondTo(name)
 
 
 prototype.Super(method, arglist)
+
+
+prototype.Methods()
 
 
 ------------------------------------------------------------------------
@@ -491,6 +508,12 @@ tlib#agent#UpN(world, selected)
 
                                                     *tlib#agent#DownN*
 tlib#agent#DownN(world, selected)
+
+                                                    *tlib#agent#ShiftLeft*
+tlib#agent#ShiftLeft(world, selected)
+
+                                                    *tlib#agent#ShiftRight*
+tlib#agent#ShiftRight(world, selected)
 
                                                     *tlib#agent#Reset*
 tlib#agent#Reset(world, selected)
@@ -685,6 +708,12 @@ autoload/tlib/cmd.vim~
                                                     *tlib#cmd#OutputAsList*
 tlib#cmd#OutputAsList(command)
 
+                                                    *tlib#cmd#UseVertical*
+tlib#cmd#UseVertical(?rx='')
+    Look at the history whether the command was called with vertical. If 
+    an rx is provided check first if the last entry in the history matches 
+    this rx.
+
 
 ------------------------------------------------------------------------
 autoload/tlib/dir.vim~
@@ -694,6 +723,13 @@ tlib#dir#CanonicName(dirname)
     EXAMPLES: >
       tlib#dir#CanonicName('foo/bar')
       => 'foo/bar/'
+<
+
+                                                    *tlib#dir#PlainName*
+tlib#dir#PlainName(dirname)
+    EXAMPLES: >
+      tlib#dir#PlainName('foo/bar/')
+      => 'foo/bar'
 <
 
                                                     *tlib#dir#Ensure*
@@ -937,6 +973,21 @@ tlib#string#RemoveBackslashes(text, ?chars=' ')
 
 
 ------------------------------------------------------------------------
+autoload/tlib/tab.vim~
+
+                                                    *tlib#tab#BufMap*
+tlib#tab#BufMap()
+    Return a dictionary of bufnumbers => [[tabpage, winnr] ...]
+
+                                                    *tlib#tab#TabWinNr*
+tlib#tab#TabWinNr(buffer)
+    Find a buffer's window at some tab page.
+
+                                                    *tlib#tab#Set*
+tlib#tab#Set(tabnr)
+
+
+------------------------------------------------------------------------
 autoload/tlib/url.vim~
 
                                                     *tlib#url#Decode*
@@ -948,7 +999,7 @@ tlib#url#EncodeChar(char)
     Encode a single character.
 
                                                     *tlib#url#Encode*
-tlib#url#Encode(url)
+tlib#url#Encode(url, ...)
     Encode an url.
 
 
@@ -995,8 +1046,8 @@ tlib#var#Get(var, namespace, ?default='')
 ------------------------------------------------------------------------
 autoload/tlib/win.vim~
 
-                                                    *tlib#win#SetWin*
-tlib#win#SetWin(winnr)
+                                                    *tlib#win#Set*
+tlib#win#Set(winnr)
     Return vim code to jump back to the original window.
 
                                                     *tlib#win#GetLayout*
@@ -1004,5 +1055,8 @@ tlib#win#GetLayout(?save_view=0)
 
                                                     *tlib#win#SetLayout*
 tlib#win#SetLayout(layout)
+
+                                                    *tlib#win#Width*
+tlib#win#Width(wnr)
 
 

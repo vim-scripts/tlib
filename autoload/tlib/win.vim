@@ -1,10 +1,10 @@
 " win.vim
-" @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-08-24.
-" @Last Change: 2007-08-25.
-" @Revision:    0.0.27
+" @Last Change: 2007-08-29.
+" @Revision:    0.0.31
 
 if &cp || exists("loaded_tlib_win_autoload")
     finish
@@ -13,7 +13,7 @@ let loaded_tlib_win_autoload = 1
 
 
 " Return vim code to jump back to the original window.
-function! tlib#win#SetWin(winnr) "{{{3
+function! tlib#win#Set(winnr) "{{{3
     if a:winnr > 0
         " TLogDBG winnr()
         if winnr() != a:winnr && winbufnr(a:winnr) != -1
@@ -33,10 +33,10 @@ function! tlib#win#GetLayout(...) "{{{3
     if save_view
         let winnr = winnr()
         for w in range(1, winnr('$'))
-            call tlib#win#SetWin(w)
+            call tlib#win#Set(w)
             let views[w] = winsaveview()
         endfor
-        call tlib#win#SetWin(winnr)
+        call tlib#win#Set(winnr)
     endif
     return [winnr('$'), winrestcmd(), views]
 endf
@@ -49,10 +49,10 @@ function! tlib#win#SetLayout(layout) "{{{3
         if !empty(views)
             let winnr = winnr()
             for [w, v] in items(views)
-                call tlib#win#SetWin(w)
+                call tlib#win#Set(w)
                 call winrestview(v)
             endfor
-            call tlib#win#SetWin(winnr)
+            call tlib#win#Set(winnr)
         endif
         return 1
     endif
@@ -70,12 +70,12 @@ endf
 "     for w in range(1, winnr('$'))
 "         let def = {'h': winheight(w), 'w': winwidth(w)}
 "         if save_view
-"             call tlib#win#SetWin(w)
+"             call tlib#win#Set(w)
 "             let def.view = winsaveview()
 "         endif
 "         let acc[w] = def
 "     endfor
-"     call tlib#win#SetWin(winnr)
+"     call tlib#win#Set(winnr)
 "     return acc
 " endf
 " 
@@ -87,7 +87,7 @@ endf
 "     endif
 "     let winnr = winnr()
 "     for [w, def] in items(a:layout)
-"         if tlib#win#SetWin(w)
+"         if tlib#win#Set(w)
 "             exec 'resize '. def.h
 "             exec 'vertical resize '. def.w
 "             if has_key(def, 'view')
@@ -97,8 +97,12 @@ endf
 "             break
 "         endif
 "     endfor
-"     call tlib#win#SetWin(winnr)
+"     call tlib#win#Set(winnr)
 "     return 1
 " endf
 
+
+function! tlib#win#Width(wnr) "{{{3
+    return winwidth(a:wnr) - &fdc
+endf
 

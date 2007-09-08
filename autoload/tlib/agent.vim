@@ -1,10 +1,10 @@
 " agent.vim
-" @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-24.
-" @Last Change: 2007-08-26.
-" @Revision:    0.1.114
+" @Last Change: 2007-09-02.
+" @Revision:    0.1.122
 
 if &cp || exists("loaded_tlib_agent_autoload") "{{{2
     finish
@@ -83,6 +83,23 @@ endf
 
 function! tlib#agent#DownN(world, selected) "{{{3
     return tlib#agent#Down(a:world, a:selected, g:tlib_scroll_lines)
+endf
+
+
+function! tlib#agent#ShiftLeft(world, selected) "{{{3
+    let a:world.offset_horizontal -= (winwidth(0) / 2)
+    if a:world.offset_horizontal < 0
+        let a:world.offset_horizontal = 0
+    endif
+    let a:world.state = 'display shift'
+    return a:world
+endf
+
+
+function! tlib#agent#ShiftRight(world, selected) "{{{3
+    let a:world.offset_horizontal += (winwidth(0) / 2)
+    let a:world.state = 'display shift'
+    return a:world
 endf
 
 
@@ -328,12 +345,9 @@ endf
 " Files related {{{1
 
 function! tlib#agent#ViewFile(world, selected) "{{{3
-    if a:world.SwitchWindow('win')
-        call tlib#file#With('edit', 'buffer', a:selected, a:world)
-        if !a:world.SwitchWindow('list')
-            throw 'tlib: Cannot switch back to list window: '. string(a:world)
-        end
-    endif
+    let back = a:world.SwitchWindow('win')
+    call tlib#file#With('edit', 'buffer', a:selected, a:world)
+    exec back
     let a:world.state = 'display'
     return a:world
 endf

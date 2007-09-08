@@ -1,10 +1,10 @@
 " hook.vim
-" @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-08-21.
-" @Last Change: 2007-08-24.
-" @Revision:    0.0.6
+" @Last Change: 2007-08-27.
+" @Revision:    0.0.7
 
 if &cp || exists("loaded_tlib_hook_autoload")
     finish

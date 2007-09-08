@@ -1,15 +1,16 @@
 " tlib.vim -- Some utility functions
-" @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-08-26.
-" @Revision:    0.11.308
+" @Last Change: 2007-09-05.
+" @Revision:    0.12.338
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
 "
 " TODO:
+" - tlib#cache#Purge(): delete old cache files (for the moment use find)
 " - tlib#file#Relative(): currently relies on cwd to be set
 " - tlib#input#EditList(): Disable selection by index number
 " - tlib#input#List(): Some kind of command line to edit some 
@@ -23,7 +24,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 11
+let loaded_tlib = 12
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -36,15 +37,16 @@ set cpo&vim
 " Set a variable only if it doesn't already exist.
 " EXAMPLES: >
 "   TLet foo = 1
-command! -nargs=+ TLet let s:tllet_var = matchstr(<q-args>, '^\S\+')
-            \ | let s:tllet_val = matchstr(<q-args>, '=\s*\zs.*')
-            \ | exec printf('if !exists(%s) | let %s = %s | endif', string(s:tllet_var), s:tllet_var, s:tllet_val)
-            " \ | unlet s:tllet_var s:tllet_val
+command! -nargs=+ TLet exec printf('if !exists("%s") | let %s | endif', matchstr(<q-args>, '^[^=[:space:]]\+'), <q-args>)
 
 
 " Open a scratch buffer (a buffer without a file). >
 "   TScratch  ... use split window
 "   TScratch! ... use the whole frame
+" This command takes an (inner) dictionnary as optional argument.
+" EXAMPLES: >
+"   TScratch 'scratch': '__FOO__'
+"   => Open a scratch buffer named __FOO__
 command! -bar -nargs=* -bang TScratch call tlib#scratch#UseScratch({'scratch_split': '<bang>' != '!', <args>})
 
 
@@ -77,7 +79,7 @@ TLet g:tlib_scratch_pos = 'botright'
 TLet g:tlib_inputlist_pct = 70
 
 " Size of filename columns when listing filenames
-TLet g:tlib_inputlist_width_filename = &co / 3
+TLet g:tlib_inputlist_width_filename = '&co / 3'
 " TLet g:tlib_inputlist_width_filename = 25
 
 " The highlight group to use for showing matches in the input list window.
@@ -138,6 +140,8 @@ TLet g:tlib_keyagents_InputList_s = {
             \ "\<Down>":     'tlib#agent#Down',
             \ "\<c-Up>":     'tlib#agent#UpN',
             \ "\<c-Down>":   'tlib#agent#DownN',
+            \ "\<Left>":     'tlib#agent#ShiftLeft',
+            \ "\<Right>":    'tlib#agent#ShiftRight',
             \ 18:            'tlib#agent#Reset',
             \ 242:           'tlib#agent#Reset',
             \ 17:            'tlib#agent#Input',
@@ -183,6 +187,7 @@ TLet g:tlib_handlers_EditList = [
             \ {'pick_last_item': 0},
             \ {'return_agent': 'tlib#agent#EditReturnValue'},
             \ ]
+
 
 augroup TLib
     autocmd!
@@ -297,4 +302,20 @@ FIXES:
     - tlib#input#List(): Ensure the window layout doesn't change (if the 
     number of windows hasn't changed)
     - tlib#arg#Ex(): Don't escape backslashes by default
+
+0.12
+NEW:
+    - tlib/tab.vim
+CHANGES:
+    - Renamed tlib#win#SetWin() to tlib#win#Set()
+IMPROVEMENTS:
+    - tlib#input#List(): <left>, <right> keys work in some lists
+    - tlib#input#List(): If an index_table is provided this will be used 
+    instead of the item's list index.
+FIXES:
+    - tlib#input#List(): Problem with scrolling, when the list was 
+    shorter than the window (eg when using a vertical window).
+    - tlib#cache#Filename(): Don't rewrite name as relative filename if 
+    explicitly given as argument. Avoid double (back)slashes.
+    - TLet: simplified
 

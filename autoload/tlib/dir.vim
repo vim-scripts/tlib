@@ -1,10 +1,10 @@
 " dir.vim
-" @Author:      Thomas Link (mailto:samul AT web de?subject=[vim])
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-08-21.
-" @Revision:    0.0.19
+" @Last Change: 2007-09-02.
+" @Revision:    0.0.21
 
 if &cp || exists("loaded_tlib_dir_autoload")
     finish
@@ -21,6 +21,14 @@ function! tlib#dir#CanonicName(dirname) "{{{3
         return a:dirname . g:tlib_filename_sep
     endif
     return a:dirname
+endf
+
+
+" EXAMPLES: >
+"   tlib#dir#PlainName('foo/bar/')
+"   => 'foo/bar'
+function! tlib#dir#PlainName(dirname) "{{{3
+    return substitute(a:dirname, tlib#rx#Escape(g:tlib_filename_sep).'\+$', '', '')
 endf
 
 

@@ -1,10 +1,10 @@
 " tLib.vim
-" @Author:      Thomas Link (mailto:samul AT web de?subject=vim-tLib)
+" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=vim-tLib)
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2006-12-17.
-" @Last Change: 2007-08-04.
-" @Revision:    115
+" @Last Change: 2007-08-27.
+" @Revision:    116
 
 if !exists("loaded_tassert")
     echoerr 'tAssert (vimscript #1730) is required'

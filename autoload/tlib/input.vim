@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-02.
-" @Revision:    0.0.323
+" @Last Change: 2007-09-11.
+" @Revision:    0.0.343
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -87,6 +87,11 @@ function! tlib#input#List(type, ...) "{{{3
         let world.numeric_chars    = tlib#list#Find(handlers, 'has_key(v:val, "numeric_chars")', 
                     \ tlib#var#Get('tlib_numeric_chars', 'bg'), 'v:val.numeric_chars')
         let world.key_handlers     = filter(copy(handlers), 'has_key(v:val, "key")')
+        let filter                 = tlib#list#Find(handlers, 'has_key(v:val, "filter")', '', 'v:val.filter')
+        if !empty(filter)
+            let world.initial_filter = [[filter], ['']]
+            " TLogVAR world.initial_filter
+        endif
     endif
     return tlib#input#ListW(world)
 endf
@@ -167,6 +172,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                     let world.prefidx = world.offset
                     let world.state = 'redisplay'
                 endif
+                " TLogVAR world.filter
                 if world.state =~ 'display'
                     if world.state =~ '^display'
                         let world.table = filter(range(1, len(world.base)), 'world.MatchBaseIdx(world.filter_format, v:val)')
@@ -267,15 +273,17 @@ function! tlib#input#ListW(world, ...) "{{{3
                     " continue
                 elseif has_key(key_agents, c)
                     let sr = @/
-                    let @/ = lastsearch
+                    silent! let @/ = lastsearch
                     let world = call(key_agents[c], [world, world.GetSelectedItems(world.GetCurrentItem())])
                     call s:CheckAgentReturnValue(c, world)
-                    let @/ = sr
+                    silent! let @/ = sr
                     " continue
                 elseif c == 13
                     throw 'pick'
                 elseif c == "\<LeftMouse>"
-                    let world.prefidx = matchstr(getline(v:mouse_lnum), '^\d\+\ze:')
+                    let line = getline(v:mouse_lnum)
+                    " TLogVAR line
+                    let world.prefidx = matchstr(line, '^\d\+\ze[*:]')
                     if empty(world.prefidx)
                         " call feedkeys(c, 't')
                         let c = tlib#char#Get(world.timeout)
@@ -374,7 +382,7 @@ function! tlib#input#ListW(world, ...) "{{{3
     finally
         let &statusline = statusline
         let &laststatus = laststatus
-        let @/          = lastsearch
+        silent! let @/          = lastsearch
         " TLogDBG 'finally 2'
         if world.state !~ '\<suspend\>'
             " TLogVAR world.state, world.win_wnr, world.bufnr
@@ -467,11 +475,11 @@ function! s:FormatFilename(world, file) "{{{3
     let bnr    = bufnr(a:file)
     " TLogVAR a:file, bnr, a:world.bufnr
     if bnr != -1
-        if buflisted(a:file)
+        if bnr == a:world.bufnr
+            call add(marker, '%')
+        elseif buflisted(a:file)
             if getbufvar(a:file, "&mod")
                 call add(marker, '+')
-            elseif bnr == a:world.bufnr
-                call add(marker, '%')
             else
                 call add(marker, 'B')
             endif
@@ -555,10 +563,11 @@ endf
 
 " :def: function! tlib#input#Edit(name, value, callback, ?cb_args=[])
 "
-" Edit value in a scratch buffer. Use name for identification. Call 
-" callback when done (or on cancel).
+" Edit a value (asynchronously) in a scratch buffer. Use name for 
+" identification. Call callback when done (or on cancel).
 " In the scratch buffer:
-" Press <c-s> to enter, <c-w>c to cancel editing.
+" Press <c-s> or <c-w><cr> to enter the new value, <c-w>c to cancel 
+" editing.
 " EXAMPLES: >
 "   fun! FooContinue(success, text)
 "       if a:success
@@ -575,15 +584,18 @@ function! tlib#input#Edit(name, value, callback, ...) "{{{3
     imap <buffer> <c-w>c <c-o>call <SID>EditCallback(0)<cr>
     map <buffer> <c-s> :call <SID>EditCallback(1)<cr>
     imap <buffer> <c-s> <c-o>call <SID>EditCallback(1)<cr>
+    map <buffer> <c-w><cr> :call <SID>EditCallback(1)<cr>
+    imap <buffer> <c-w><cr> <c-o>call <SID>EditCallback(1)<cr>
     norm! ggdG
     call append(1, split(a:value, "\<c-j>", 1))
     " let hrm = 'DON''T DELETE THIS HEADER'
     " let hr3 = repeat('"', (tlib#win#Width(0) - len(hrm)) / 2)
     let s:horizontal_line = repeat('`', tlib#win#Width(0))
     " hr3.hrm.hr3
-    let hd  = ['``` Keys: <c-s> ... save/accept; <c-w>c ... cancel', s:horizontal_line]
+    let hd  = ['Keys: <c-s>, <c-w><cr> ... save/accept; <c-w>c ... cancel', s:horizontal_line]
     call append(1, hd)
     norm! ggdd
+    syntax match TlibEditComment /^\%1l.*/
     syntax match TlibEditComment /^```.*/
     hi link TlibEditComment Comment
     exec len(hd) + 1

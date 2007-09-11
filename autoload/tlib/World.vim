@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-09-02.
-" @Revision:    0.1.305
+" @Last Change: 2007-09-10.
+" @Revision:    0.1.314
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -24,8 +24,10 @@ let s:prototype = tlib#Object#New({
             \ 'base': [], 
             \ 'bufnr': -1,
             \ 'display_format': '',
+            \ 'filter': [['']],
             \ 'filter_format': '',
             \ 'index_table': [],
+            \ 'initial_filter': [['']],
             \ 'initial_index': 1,
             \ 'initialized': 0,
             \ 'key_handlers': [],
@@ -256,7 +258,7 @@ endf
 
 function! s:prototype.FilterIsEmpty() dict "{{{3
     " TLogVAR self.filter
-    return self.filter == [['']]
+    return self.filter == copy(self.initial_filter)
 endf
 
 
@@ -306,7 +308,7 @@ function! s:prototype.Reset(...) dict "{{{3
     " TLogVAR initial
     let self.state     = 'display'
     let self.offset    = 1
-    let self.filter    = [['']]
+    let self.filter    = deepcopy(self.initial_filter)
     let self.idx       = ''
     let self.prefidx   = 0
     call self.UseInputListScratch()

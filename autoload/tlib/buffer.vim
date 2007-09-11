@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-02.
-" @Revision:    0.0.58
+" @Last Change: 2007-09-10.
+" @Revision:    0.0.66
 
 if &cp || exists("loaded_tlib_buffer_autoload")
     finish
@@ -14,7 +14,7 @@ let loaded_tlib_buffer_autoload = 1
 
 " Set the buffer to buffer and return a command as string that can be 
 " evaluated by |:execute| in order to restore the original view.
-function! tlib#buffer#SetBuffer(buffer) "{{{3
+function! tlib#buffer#Set(buffer) "{{{3
     let lazyredraw = &lazyredraw
     set lazyredraw
     try
@@ -52,7 +52,7 @@ function! tlib#buffer#Eval(buffer, code) "{{{3
     " let sb = sn != cb
     let lazyredraw = &lazyredraw
     set lazyredraw
-    let restore = tlib#buffer#SetBuffer(a:buffer)
+    let restore = tlib#buffer#Set(a:buffer)
     try
         exec a:code
         " if sb
@@ -82,9 +82,9 @@ function! tlib#buffer#Eval(buffer, code) "{{{3
 endf
 
 
-" :def: function! tlib#buffer#GetList(?show_hidden=0)
+" :def: function! tlib#buffer#GetList(?show_hidden=0, ?show_number=0)
 function! tlib#buffer#GetList(...)
-    exec tlib#arg#Let(['show_hidden'])
+    TVarArg ['show_hidden', 0], ['show_number', 0]
     let ls_bang = show_hidden ? '!' : ''
     redir => bfs
     exec 'silent ls'. ls_bang
@@ -92,8 +92,11 @@ function! tlib#buffer#GetList(...)
     let buffer_list = split(bfs, '\n')
     let buffer_nr = map(copy(buffer_list), 'matchstr(v:val, ''\s*\zs\d\+\ze'')')
     " TLogVAR buffer_list
-    call map(buffer_list, 'matchstr(v:val, ''\s*\d\+\zs.\{-}\ze\s\+line \d\+\s*$'')')
-    " call map(buffer_list, 'matchstr(v:val, ''\s*\d\+.\{-}\ze\s\+line \d\+\s*$'')')
+    if show_number
+        call map(buffer_list, 'matchstr(v:val, ''\s*\d\+.\{-}\ze\s\+line \d\+\s*$'')')
+    else
+        call map(buffer_list, 'matchstr(v:val, ''\s*\d\+\zs.\{-}\ze\s\+line \d\+\s*$'')')
+    endif
     " TLogVAR buffer_list
     " call map(buffer_list, 'matchstr(v:val, ''^.\{-}\ze\s\+line \d\+\s*$'')')
     " TLogVAR buffer_list
@@ -120,6 +123,11 @@ function! tlib#buffer#ViewLine(line, ...) "{{{3
         endif
         let @/ = '\V\%'. ln .'l'. escape(lt, '\')
     endif
+endf
+
+
+function! tlib#buffer#HighlightLine(line) "{{{3
+    exec 'match MatchParen /\V\%'. a:line .'l.*/'
 endf
 
 
@@ -153,4 +161,11 @@ function! tlib#buffer#ScratchEnd() "{{{3
     unlet b:tlib_inbuffer_scratch
 endf
 
+
+" Run exec on all buffers via bufdo and return to the original buffer.
+function! tlib#buffer#BufDo(exec) "{{{3
+    let bn = bufnr('%')
+    exec 'bufdo '. a:exec
+    exec 'buffer! '. bn
+endf
 

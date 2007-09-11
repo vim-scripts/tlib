@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-24.
-" @Last Change: 2007-09-02.
-" @Revision:    0.1.122
+" @Last Change: 2007-09-10.
+" @Revision:    0.1.124
 
 if &cp || exists("loaded_tlib_agent_autoload") "{{{2
     finish
@@ -151,7 +151,7 @@ function! tlib#agent#Suspend(world, selected) "{{{3
     if a:world.allow_suspend
         " TAssert IsNotEmpty(a:world.scratch)
         " TLogDBG bufnr('%')
-        let br = tlib#buffer#SetBuffer(a:world.scratch)
+        let br = tlib#buffer#Set(a:world.scratch)
         " TLogVAR br, a:world.bufnr, a:world.scratch
         " TLogDBG bufnr('%')
         let b:tlib_suspend = ['<m-z>', '<c-z>', '<cr>', '<space>', '<LeftMouse>']
@@ -378,7 +378,7 @@ endf
 
 function! tlib#agent#EditFileInTab(world, selected) "{{{3
     call a:world.CloseScratch()
-    call tlib#file#With('tabedit', 'tab buffer', a:selected, a:world)
+    call tlib#file#With('tabedit', 'tab sbuffer', a:selected, a:world)
     return tlib#agent#Exit(a:world, a:selected)
 endf
 

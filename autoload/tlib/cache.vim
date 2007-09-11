@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-02.
-" @Revision:    0.1.17
+" @Last Change: 2007-09-09.
+" @Revision:    0.1.20
 
 if &cp || exists("loaded_tlib_cache_autoload")
     finish
@@ -15,7 +15,10 @@ let loaded_tlib_cache_autoload = 1
 " :def: function! tlib#cache#Filename(type, ?file=%, ?mkdir=0)
 function! tlib#cache#Filename(type, ...) "{{{3
     " TLogDBG 'bufname='. bufname('.')
-    let dir   = tlib#dir#MyRuntime()
+    let dir = tlib#var#Get('tlib_cache', 'wbg')
+    if empty(dir)
+        let dir = tlib#file#Join([tlib#dir#MyRuntime(), 'cache'])
+    endif
     if a:0 >= 1 && !empty(a:1)
         let file  = a:1
     else
@@ -23,11 +26,11 @@ function! tlib#cache#Filename(type, ...) "{{{3
             return ''
         endif
         let file  = expand('%:p')
-        let file  = tlib#file#Relative(file, dir)
+        let file  = tlib#file#Relative(file, tlib#file#Join([dir, '..']))
     endif
     let mkdir = a:0 >= 2 ? a:2 : 0
     let file  = substitute(file, '\.\.\|[:&<>]\|//\+\|\\\\\+', '_', 'g')
-    let dir   = tlib#dir#PlainName(tlib#file#Join([dir, 'cache', a:type, fnamemodify(file, ':h')]))
+    let dir   = tlib#dir#PlainName(tlib#file#Join([dir, a:type, fnamemodify(file, ':h')]))
     let file  = fnamemodify(file, ':t')
     " TLogVAR dir
     " TLogVAR file

@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-09-05.
-" @Revision:    0.12.338
+" @Last Change: 2007-09-10.
+" @Revision:    0.13.355
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
@@ -24,20 +24,20 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 12
+let loaded_tlib = 13
 let s:save_cpo = &cpo
 set cpo&vim
 
 
 " Commands {{{1
-" See |tlib#var#Let| for an example.
-" command! -nargs=+ TLLet exec tlib#var#Let(<args>)
-
 " :display: :TLet VAR = VALUE
 " Set a variable only if it doesn't already exist.
 " EXAMPLES: >
 "   TLet foo = 1
-command! -nargs=+ TLet exec printf('if !exists("%s") | let %s | endif', matchstr(<q-args>, '^[^=[:space:]]\+'), <q-args>)
+"   TLet foo = 2
+"   echo foo
+"   => 1
+command! -nargs=+ TLet if !exists(matchstr(<q-args>, '^[^=[:space:]]\+')) | exec 'let '. <q-args> | endif
 
 
 " Open a scratch buffer (a buffer without a file). >
@@ -88,6 +88,8 @@ TLet g:tlib_inputlist_higroup = 'IncSearch'
 TLet g:tlib_filename_sep = '/'
 " TLet g:tlib_filename_sep = exists('+shellslash') && !&shellslash ? '\' : '/'   " {{{2
 
+" The cache directory. If empty, use |tlib#dir#MyRuntime|.'/cache'
+TLet g:tlib_cache = ''
 
 " Where to display the line when using |tlib#buffer#ViewLine|.
 " For possible values for position see |scroll-cursor|.
@@ -318,4 +320,14 @@ FIXES:
     - tlib#cache#Filename(): Don't rewrite name as relative filename if 
     explicitly given as argument. Avoid double (back)slashes.
     - TLet: simplified
+
+0.13
+CHANGES:
+    - Scratch: Set &fdc=0.
+    - The cache directory can be configured via g:tlib_cache
+    - Renamed tlib#buffer#SetBuffer() to tlib#buffer#Set().
+FIXES:
+    - tlib#input#List(): Select the active item per mouse.
+    - TLet: simplified
+
 

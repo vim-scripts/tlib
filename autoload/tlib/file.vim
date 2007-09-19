@@ -1,10 +1,10 @@
 " file.vim
-" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
+" @Author:      Thomas Link (micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-11.
-" @Revision:    0.0.41
+" @Last Change: 2007-09-14.
+" @Revision:    0.0.43
 
 if &cp || exists("loaded_tlib_file_autoload")
     finish
@@ -91,7 +91,7 @@ endf
 function! tlib#file#With(fcmd, bcmd, files, ...) "{{{3
     exec tlib#arg#Let([['world', {}]])
     for f in a:files
-        let bn = bufnr(f)
+        let bn = bufnr('^'.f.'$')
         if bn != -1 && buflisted(bn)
             if !empty(a:bcmd)
                 " TLogDBG a:bcmd .' '. bn

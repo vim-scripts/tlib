@@ -1,10 +1,10 @@
 " buffer.vim
-" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
+" @Author:      Thomas Link (micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-10.
-" @Revision:    0.0.66
+" @Last Change: 2007-09-19.
+" @Revision:    0.0.155
 
 if &cp || exists("loaded_tlib_buffer_autoload")
     finish
@@ -107,11 +107,12 @@ endf
 
 
 " :def: function! tlib#buffer#ViewLine(line, ?position='z')
+" line is either a number or a string that begins with a number.
 " For possible values for position see |scroll-cursor|.
 " See also |g:tlib_viewline_position|.
 function! tlib#buffer#ViewLine(line, ...) "{{{3
     if a:line
-        exec tlib#arg#Let(['pos'])
+        TVarArg 'pos'
         let ln = matchstr(a:line, '^\d\+')
         let lt = matchstr(a:line, '^\d\+: \zs.*')
         exec ln
@@ -167,5 +168,74 @@ function! tlib#buffer#BufDo(exec) "{{{3
     let bn = bufnr('%')
     exec 'bufdo '. a:exec
     exec 'buffer! '. bn
+endf
+
+
+" :def: function! tlib#buffer#InsertText(text, keyargs)
+" Keyargs:
+"   'shift': 0|N
+"   'col': col('.')|N
+"   'lineno': line('.')|N
+"   'indent': 0|1
+"   'pos': 'e'|'s' ... Where to locate the cursor (somewhat like s and e in {offset})
+" Insert text (a string) in the buffer.
+function! tlib#buffer#InsertText(text, ...) "{{{3
+    TVarArg ['keyargs', {}]
+    TKeyArg keyargs, ['shift', 0], ['col', col('.')], ['lineno', line('.')], ['pos', 'e'],
+                \ ['indent', 0]
+    " TLogVAR shift, col, lineno, pos, indent
+    let line = getline(lineno)
+    if col + shift > 0
+        let pre  = line[0 : (col - 1 + shift)]
+        let post = line[(col + shift): -1]
+    else
+        let pre  = ''
+        let post = line
+    endif
+    " TLogVAR lineno, line, pre, post
+    let text = split(pre . a:text . post, '\n', 1)
+    " TLogVAR text
+    let icol = len(pre)
+    if indent && col > 1
+        let idt = repeat(' ', icol)
+        for i in range(1, len(text) - 1)
+            let text[i] = idt . text[i]
+        endfor
+        " TLogVAR text
+    endif
+    exec 'norm! '. lineno .'Gdd'
+    call append(lineno - 1, text)
+    let tlen = len(text)
+    let posshift = matchstr(pos, '\d\+')
+    if pos =~ '^e'
+        exec lineno + tlen - 1
+        exec 'norm! 0'. (len(text[-1]) - len(post) + posshift - 1) .'l'
+    elseif pos =~ '^s'
+        exec lineno
+        exec 'norm! '. len(pre) .'|'
+        if !empty(posshift)
+            exec 'norm! '. posshift .'h'
+        endif
+    endif
+    " TLogDBG string(getline(1, '$'))
+endf
+
+
+function! tlib#buffer#InsertText0(text, ...) "{{{3
+    TVarArg ['keyargs', {}]
+    let mode = get(keyargs, 'mode', 'i')
+    " TLogVAR mode
+    if !has_key(keyargs, 'shift')
+        let col = col('.')
+        " if mode =~ 'i'
+        "     let col += 1
+        " endif
+        let keyargs.shift = col >= col('$') ? 0 : -1
+        " let keyargs.shift = col('.') >= col('$') ? 0 : -1
+        " TLogVAR col
+        " TLogDBG col('.') .'-'. col('$') .': '. string(getline('.'))
+    endif
+    " TLogVAR keyargs.shift
+    return tlib#buffer#InsertText(a:text, keyargs)
 endf
 

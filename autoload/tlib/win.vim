@@ -1,10 +1,10 @@
 " win.vim
-" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
+" @Author:      Thomas Link (micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-08-24.
-" @Last Change: 2007-08-29.
-" @Revision:    0.0.31
+" @Last Change: 2007-09-12.
+" @Revision:    0.0.35
 
 if &cp || exists("loaded_tlib_win_autoload")
     finish
@@ -38,21 +38,23 @@ function! tlib#win#GetLayout(...) "{{{3
         endfor
         call tlib#win#Set(winnr)
     endif
-    return [winnr('$'), winrestcmd(), views]
+    return {'winnr': winnr('$'), 'winrestcmd': winrestcmd(), 'views': views, 'cmdheight': &cmdheight}
 endf
 
 
 function! tlib#win#SetLayout(layout) "{{{3
-    let [wn, layout, views] = a:layout
-    if wn == winnr('$')
-        exec layout
-        if !empty(views)
+    if a:layout.winnr == winnr('$')
+        exec a:layout.winrestcmd
+        if !empty(a:layout.views)
             let winnr = winnr()
-            for [w, v] in items(views)
+            for [w, v] in items(a:layout.views)
                 call tlib#win#Set(w)
                 call winrestview(v)
             endfor
             call tlib#win#Set(winnr)
+        endif
+        if a:layout.cmdheight != &cmdheight
+            let &cmdheight = a:layout.cmdheight
         endif
         return 1
     endif

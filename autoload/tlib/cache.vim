@@ -1,10 +1,10 @@
 " cache.vim
-" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
+" @Author:      Thomas Link (micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-09.
-" @Revision:    0.1.20
+" @Last Change: 2007-09-19.
+" @Revision:    0.1.23
 
 if &cp || exists("loaded_tlib_cache_autoload")
     finish

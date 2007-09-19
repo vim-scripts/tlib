@@ -1,10 +1,10 @@
 " tlib.vim -- Some utility functions
-" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
+" @Author:      Thomas Link (micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-09-10.
-" @Revision:    0.13.355
+" @Last Change: 2007-09-15.
+" @Revision:    0.14.364
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
@@ -24,7 +24,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 13
+let loaded_tlib = 14
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -59,6 +59,17 @@ command! -bar -nargs=* -bang TScratch call tlib#scratch#UseScratch({'scratch_spl
 "       echo 'b='. b
 "   endf
 command! -nargs=+ TVarArg exec tlib#arg#Let([<args>])
+
+
+" :display: :TKeyArg DICT, VAR1, [VAR2, DEFAULT2] ...
+" A convenience wrapper for |tlib#arg#Let|.
+" EXAMPLES: >
+"   function! Foo(keyargs)
+"       TKeyArg a:keyargs, ['a', 1], 'b'
+"       echo 'a='. a
+"       echo 'b='. b
+"   endf
+command! -nargs=+ TKeyArg exec tlib#arg#Key([<args>])
 
 
 
@@ -330,4 +341,11 @@ FIXES:
     - tlib#input#List(): Select the active item per mouse.
     - TLet: simplified
 
+0.14
+NEW:
+    - tlib#buffer#InsertText()
+CHANGES:
+    - tlib#win#[SG]etLayout(): Use a dictionnary, set &cmdheight.
+FIXES:
+    - Wrong order with pre-defined filters.
 

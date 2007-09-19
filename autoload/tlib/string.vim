@@ -1,10 +1,10 @@
 " string.vim
-" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
+" @Author:      Thomas Link (micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-08-27.
-" @Revision:    0.0.11
+" @Last Change: 2007-09-13.
+" @Revision:    0.0.14
 
 if &cp || exists("loaded_tlib_string_autoload")
     finish
@@ -20,5 +20,9 @@ function! tlib#string#RemoveBackslashes(text, ...) "{{{3
     " TLogVAR chars
     let rv = substitute(a:text, '\\\(['. chars .']\)', '\1', 'g')
     return rv
+endf
+
+function! tlib#string#Chomp(string) "{{{3
+    return substitute(a:string, '[[:cntrl:][:space:]]*$', '', '')
 endf
 

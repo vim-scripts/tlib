@@ -1,10 +1,10 @@
 " input.vim
-" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
+" @Author:      Thomas Link (micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-11.
-" @Revision:    0.0.343
+" @Last Change: 2007-09-16.
+" @Revision:    0.0.350
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -89,11 +89,18 @@ function! tlib#input#List(type, ...) "{{{3
         let world.key_handlers     = filter(copy(handlers), 'has_key(v:val, "key")')
         let filter                 = tlib#list#Find(handlers, 'has_key(v:val, "filter")', '', 'v:val.filter')
         if !empty(filter)
-            let world.initial_filter = [[filter], ['']]
+            let world.initial_filter = [[''], [filter]]
             " TLogVAR world.initial_filter
         endif
     endif
     return tlib#input#ListW(world)
+endf
+
+
+" A wrapper for |tlib#input#ListW()| that builds |tlib#World#New| from 
+" dict.
+function! tlib#input#ListD(dict) "{{{3
+    return tlib#input#ListW(tlib#World#New(a:dict))
 endf
 
 
@@ -364,6 +371,8 @@ function! tlib#input#ListW(world, ...) "{{{3
             " TLogVAR world.prefidx
             " exec world.prefidx
             return
+        elseif world.state =~ '\<empty\>'
+            return stridx(world.type, 'm') != -1 ? [] : stridx(world.type, 'i') != -1 ? 0 : ''
         elseif !empty(world.return_agent)
             " TLogVAR world.return_agent
             call world.CloseScratch()

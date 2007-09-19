@@ -1,10 +1,10 @@
 " agent.vim
-" @Author:      Thomas Link (mailto:micathom AT gmail com?subject=[vim])
+" @Author:      Thomas Link (micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-24.
-" @Last Change: 2007-09-10.
-" @Revision:    0.1.124
+" @Last Change: 2007-09-15.
+" @Revision:    0.1.136
 
 if &cp || exists("loaded_tlib_agent_autoload") "{{{2
     finish
@@ -431,6 +431,25 @@ function! tlib#agent#GotoLine(world, selected) "{{{3
         endif
         call tlib#buffer#ViewLine(l)
     endif
+    return a:world
+endf
+
+
+function! tlib#agent#DoAtLine(world, selected) "{{{3
+    if !empty(a:selected)
+        let cmd = input('Command: ')
+        if !empty(cmd)
+            call a:world.SwitchWindow('win')
+            let pos = getpos('.')
+            for l in a:selected
+                call tlib#buffer#ViewLine(l, '')
+                exec cmd
+            endfor
+            call setpos('.', pos)
+        endif
+    endif
+    call a:world.ResetSelected()
+    let a:world.state = 'exit'
     return a:world
 endf
 

@@ -28,6 +28,7 @@ Contents~
         :TLet .............................. |:TLet|
         :TScratch .......................... |:TScratch|
         :TVarArg ........................... |:TVarArg|
+        :TKeyArg ........................... |:TKeyArg|
         g:tlib_pick_last_item .............. |g:tlib_pick_last_item|
         g:tlib_sortprefs_threshold ......... |g:tlib_sortprefs_threshold|
         g:tlib_scratch_pos ................. |g:tlib_scratch_pos|
@@ -128,9 +129,11 @@ Contents~
         tlib#agent#ShowInfo ................ |tlib#agent#ShowInfo()|
         tlib#agent#PreviewLine ............. |tlib#agent#PreviewLine()|
         tlib#agent#GotoLine ................ |tlib#agent#GotoLine()|
+        tlib#agent#DoAtLine ................ |tlib#agent#DoAtLine()|
     autoload/tlib/arg.vim
         tlib#arg#Get ....................... |tlib#arg#Get()|
         tlib#arg#Let ....................... |tlib#arg#Let()|
+        tlib#arg#Key ....................... |tlib#arg#Key()|
         tlib#arg#Ex ........................ |tlib#arg#Ex()|
     autoload/tlib/buffer.vim
         tlib#buffer#Set .................... |tlib#buffer#Set()|
@@ -143,6 +146,8 @@ Contents~
         tlib#buffer#ScratchStart ........... |tlib#buffer#ScratchStart()|
         tlib#buffer#ScratchEnd ............. |tlib#buffer#ScratchEnd()|
         tlib#buffer#BufDo .................. |tlib#buffer#BufDo()|
+        tlib#buffer#InsertText ............. |tlib#buffer#InsertText()|
+        tlib#buffer#InsertText0 ............ |tlib#buffer#InsertText0()|
     autoload/tlib/cache.vim
         tlib#cache#Filename ................ |tlib#cache#Filename()|
         tlib#cache#Save .................... |tlib#cache#Save()|
@@ -160,6 +165,8 @@ Contents~
         tlib#dir#CD ........................ |tlib#dir#CD()|
         tlib#dir#Push ...................... |tlib#dir#Push()|
         tlib#dir#Pop ....................... |tlib#dir#Pop()|
+    autoload/tlib/eval.vim
+        tlib#eval#FormatValue .............. |tlib#eval#FormatValue()|
     autoload/tlib/file.vim
         tlib#file#Split .................... |tlib#file#Split()|
         tlib#file#Join ..................... |tlib#file#Join()|
@@ -169,6 +176,7 @@ Contents~
         tlib#hook#Run ...................... |tlib#hook#Run()|
     autoload/tlib/input.vim
         tlib#input#List .................... |tlib#input#List()|
+        tlib#input#ListD ................... |tlib#input#ListD()|
         tlib#input#ListW ................... |tlib#input#ListW()|
         tlib#input#EditList ................ |tlib#input#EditList()|
         tlib#input#Resume .................. |tlib#input#Resume()|
@@ -185,6 +193,10 @@ Contents~
         tlib#list#Remove ................... |tlib#list#Remove()|
         tlib#list#RemoveAll ................ |tlib#list#RemoveAll()|
         tlib#list#Zip ...................... |tlib#list#Zip()|
+    autoload/tlib/progressbar.vim
+        tlib#progressbar#Init .............. |tlib#progressbar#Init()|
+        tlib#progressbar#Display ........... |tlib#progressbar#Display()|
+        tlib#progressbar#Restore ........... |tlib#progressbar#Restore()|
     autoload/tlib/rx.vim
         tlib#rx#Escape ..................... |tlib#rx#Escape()|
     autoload/tlib/scratch.vim
@@ -192,6 +204,10 @@ Contents~
         tlib#scratch#CloseScratch .......... |tlib#scratch#CloseScratch()|
     autoload/tlib/string.vim
         tlib#string#RemoveBackslashes ...... |tlib#string#RemoveBackslashes()|
+        tlib#string#Chomp .................. |tlib#string#Chomp()|
+        tlib#string#TrimLeft ............... |tlib#string#TrimLeft()|
+        tlib#string#TrimRight .............. |tlib#string#TrimRight()|
+        tlib#string#Strip .................. |tlib#string#Strip()|
     autoload/tlib/tab.vim
         tlib#tab#BufMap .................... |tlib#tab#BufMap()|
         tlib#tab#TabWinNr .................. |tlib#tab#TabWinNr()|
@@ -243,6 +259,17 @@ plugin/02tlib.vim~
     EXAMPLES: >
       function! Foo(...)
           TVarArg ['a', 1], 'b'
+          echo 'a='. a
+          echo 'b='. b
+      endf
+<
+
+                                                    *:TKeyArg*
+:TKeyArg DICT, VAR1, [VAR2, DEFAULT2] ...
+    A convenience wrapper for |tlib#arg#Let|.
+    EXAMPLES: >
+      function! Foo(keyargs)
+          TKeyArg a:keyargs, ['a', 1], 'b'
           echo 'a='. a
           echo 'b='. b
       endf
@@ -625,6 +652,9 @@ tlib#agent#GotoLine(world, selected)
     If not called from the scratch, we assume/guess that we don't have to 
     suspend the input-evaluation loop.
 
+                                                    *tlib#agent#DoAtLine()*
+tlib#agent#DoAtLine(world, selected)
+
 
 ------------------------------------------------------------------------
 autoload/tlib/arg.vim~
@@ -638,6 +668,10 @@ tlib#arg#Get(n, var, ?default="", ?test='')
 tlib#arg#Let(list, ?default='')
     Set a positional arguments from a variable argument list.
     See tlib#input#List() for an example.
+
+                                                    *tlib#arg#Key()*
+tlib#arg#Key(dict, list, ?default='')
+    See |:TKeyArg|.
 
                                                     *tlib#arg#Ex()*
 tlib#arg#Ex(arg, ?chars='%# ')
@@ -669,6 +703,7 @@ tlib#buffer#GetList(?show_hidden=0, ?show_number=0)
 
                                                     *tlib#buffer#ViewLine()*
 tlib#buffer#ViewLine(line, ?position='z')
+    line is either a number or a string that begins with a number.
     For possible values for position see |scroll-cursor|.
     See also |g:tlib_viewline_position|.
 
@@ -694,6 +729,19 @@ tlib#buffer#ScratchEnd()
                                                     *tlib#buffer#BufDo()*
 tlib#buffer#BufDo(exec)
     Run exec on all buffers via bufdo and return to the original buffer.
+
+                                                    *tlib#buffer#InsertText()*
+tlib#buffer#InsertText(text, keyargs)
+    Keyargs:
+      'shift': 0|N
+      'col': col('.')|N
+      'lineno': line('.')|N
+      'indent': 0|1
+      'pos': 'e'|'s' ... Where to locate the cursor (somewhat like s and e in {offset})
+    Insert text (a string) in the buffer.
+
+                                                    *tlib#buffer#InsertText0()*
+tlib#buffer#InsertText0(text, ...)
 
 
 ------------------------------------------------------------------------
@@ -771,6 +819,13 @@ tlib#dir#Pop()
 
 
 ------------------------------------------------------------------------
+autoload/tlib/eval.vim~
+
+                                                    *tlib#eval#FormatValue()*
+tlib#eval#FormatValue(value, ...)
+
+
+------------------------------------------------------------------------
 autoload/tlib/file.vim~
 
                                                     *tlib#file#Split()*
@@ -840,6 +895,11 @@ tlib#input#List(type. ?query='', ?list=[], ?handlers=[], ?default="", ?timeout=0
       echo tlib#input#List('mi', 'Select one or more item(s)', [100,200,300])
 <
 
+                                                    *tlib#input#ListD()*
+tlib#input#ListD(dict)
+    A wrapper for |tlib#input#ListW()| that builds |tlib#World#New| from 
+    dict.
+
                                                     *tlib#input#ListW()*
 tlib#input#ListW(world, ?command='')
     The second argument, command is meant for internal use only.
@@ -864,6 +924,7 @@ tlib#input#CommandSelect(command, ?keyargs={})
     
     EXAMPLE: >
         exec 'norm! `'. matchstr(tlib#input#CommandSelect('marks'), '^ \+\zs.')
+        exec 'norm i'. matchstr(tlib#input#CommandSelect('abbrev'), '^\S\+\s\+\zs\S\+')
 <
 
                                                     *tlib#input#Edit()*
@@ -962,6 +1023,19 @@ tlib#list#Zip(lists, ?default='')
 
 
 ------------------------------------------------------------------------
+autoload/tlib/progressbar.vim~
+
+                                                    *tlib#progressbar#Init()*
+tlib#progressbar#Init(max, ...)
+
+                                                    *tlib#progressbar#Display()*
+tlib#progressbar#Display(value)
+
+                                                    *tlib#progressbar#Restore()*
+tlib#progressbar#Restore()
+
+
+------------------------------------------------------------------------
 autoload/tlib/rx.vim~
 
                                                     *tlib#rx#Escape()*
@@ -991,6 +1065,18 @@ autoload/tlib/string.vim~
 tlib#string#RemoveBackslashes(text, ?chars=' ')
     Remove backslashes from text (but only in front of the characters in 
     chars).
+
+                                                    *tlib#string#Chomp()*
+tlib#string#Chomp(string)
+
+                                                    *tlib#string#TrimLeft()*
+tlib#string#TrimLeft(string)
+
+                                                    *tlib#string#TrimRight()*
+tlib#string#TrimRight(string)
+
+                                                    *tlib#string#Strip()*
+tlib#string#Strip(string)
 
 
 ------------------------------------------------------------------------

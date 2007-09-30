@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-16.
-" @Revision:    0.0.350
+" @Last Change: 2007-09-28.
+" @Revision:    0.0.351
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -546,6 +546,7 @@ endf
 "
 " EXAMPLE: >
 "     exec 'norm! `'. matchstr(tlib#input#CommandSelect('marks'), '^ \+\zs.')
+"     exec 'norm i'. matchstr(tlib#input#CommandSelect('abbrev'), '^\S\+\s\+\zs\S\+')
 function! tlib#input#CommandSelect(command, ...) "{{{3
     TVarArg ['args', {}]
     if has_key(args, 'retrieve')

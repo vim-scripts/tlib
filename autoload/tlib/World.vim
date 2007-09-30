@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-09-11.
-" @Revision:    0.1.315
+" @Last Change: 2007-09-29.
+" @Revision:    0.1.320
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.

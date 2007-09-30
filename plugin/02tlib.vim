@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-09-15.
-" @Revision:    0.14.364
+" @Last Change: 2007-09-30.
+" @Revision:    0.15.367
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
@@ -24,7 +24,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 14
+let loaded_tlib = 15
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -348,4 +348,9 @@ CHANGES:
     - tlib#win#[SG]etLayout(): Use a dictionnary, set &cmdheight.
 FIXES:
     - Wrong order with pre-defined filters.
+
+0.15
+NEW:
+    - tlib#string#TrimLeft(), tlib#string#TrimRight(), tlib#string#Strip()
+    - Progress bar
 

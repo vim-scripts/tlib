@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-13.
-" @Revision:    0.0.14
+" @Last Change: 2007-09-29.
+" @Revision:    0.0.17
 
 if &cp || exists("loaded_tlib_string_autoload")
     finish
@@ -22,7 +22,23 @@ function! tlib#string#RemoveBackslashes(text, ...) "{{{3
     return rv
 endf
 
+
 function! tlib#string#Chomp(string) "{{{3
     return substitute(a:string, '[[:cntrl:][:space:]]*$', '', '')
+endf
+
+
+function! tlib#string#TrimLeft(string) "{{{3
+    return substitute(a:string, '^\s\+', '', '')
+endf
+
+
+function! tlib#string#TrimRight(string) "{{{3
+    return substitute(a:string, '\s\+$', '', '')
+endf
+
+
+function! tlib#string#Strip(string) "{{{3
+    return tlib#string#TrimRight(tlib#string#TrimLeft(a:string))
 endf
 

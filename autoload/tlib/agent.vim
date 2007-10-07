@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-24.
-" @Last Change: 2007-09-15.
-" @Revision:    0.1.136
+" @Last Change: 2007-10-05.
+" @Revision:    0.1.137
 
 if &cp || exists("loaded_tlib_agent_autoload") "{{{2
     finish
@@ -437,7 +437,7 @@ endf
 
 function! tlib#agent#DoAtLine(world, selected) "{{{3
     if !empty(a:selected)
-        let cmd = input('Command: ')
+        let cmd = input('Command: ', '', 'command')
         if !empty(cmd)
             call a:world.SwitchWindow('win')
             let pos = getpos('.')

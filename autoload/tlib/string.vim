@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-29.
-" @Revision:    0.0.17
+" @Last Change: 2007-10-02.
+" @Revision:    0.0.48
 
 if &cp || exists("loaded_tlib_string_autoload")
     finish
@@ -25,6 +25,45 @@ endf
 
 function! tlib#string#Chomp(string) "{{{3
     return substitute(a:string, '[[:cntrl:][:space:]]*$', '', '')
+endf
+
+
+" This function deviates from |printf()| in certain ways.
+" Additional items:
+"     %{rx}      ... insert escaped regexp
+"     %{fuzzyrx} ... insert typo-tolerant regexp
+function! tlib#string#Printf1(format, string) "{{{3
+    let n = len(split(a:format, '%\@<!%s', 1)) - 1
+    let f = a:format
+    if f =~ '%\@<!%{fuzzyrx}'
+        let frx = []
+        for i in range(len(a:string))
+            if i > 0
+                let pb = i - 1
+            else
+                let pb = 0
+            endif
+            let slice = tlib#rx#Escape(a:string[pb : i + 1])
+            call add(frx, '['. slice .']')
+            call add(frx, '.\?')
+        endfor
+        let f = s:RewriteFormatString(f, '%{fuzzyrx}', join(frx, ''))
+    endif
+    if f =~ '%\@<!%{rx}'
+        let f = s:RewriteFormatString(f, '%{rx}', tlib#rx#Escape(a:string))
+    endif
+    if n == 0
+        return substitute(f, '%%', '%', 'g')
+    else
+        let a = repeat([a:string], n)
+        return call('printf', insert(a, f))
+    endif
+endf
+
+
+function! s:RewriteFormatString(format, pattern, string) "{{{3
+    let string = substitute(a:string, '%', '%%', 'g')
+    return substitute(a:format, tlib#rx#Escape(a:pattern), escape(string, '\'), 'g')
 endf
 
 

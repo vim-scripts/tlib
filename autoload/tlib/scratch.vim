@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-07-18.
-" @Last Change: 2007-09-11.
-" @Revision:    0.0.111
+" @Last Change: 2007-10-07.
+" @Revision:    0.0.117
 
 if &cp || exists("loaded_tlib_scratch_autoload")
     finish
@@ -22,6 +22,8 @@ function! tlib#scratch#UseScratch(...) "{{{3
     let id = get(keyargs, 'scratch', '__Scratch__')
     " TLogVAR id
     " TLogDBG winnr()
+    " TLogDBG bufnr(id)
+    " TLogDBG bufwinnr(id)
     " TLogDBG bufnr('%')
     if id =~ '^\d\+$' && bufwinnr(id) != -1
         if bufnr('%') != id

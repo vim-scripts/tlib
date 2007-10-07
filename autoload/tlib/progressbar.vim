@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-09-30.
-" @Last Change: 2007-09-30.
-" @Revision:    0.0.32
+" @Last Change: 2007-10-01.
+" @Revision:    0.0.33
 
 if &cp || exists("loaded_tlib_progressbar_autoload")
     finish
@@ -38,7 +38,7 @@ function! tlib#progressbar#Init(max, ...) "{{{3
     call insert(s:width, width)
     call insert(s:value, -1)
     let &laststatus = 2
-    let s:timestamp = -1
+    let s:timestamp = localtime()
 endf
 
 

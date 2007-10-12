@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-08-23.
-" @Last Change: 2007-09-11.
-" @Revision:    0.0.11
+" @Last Change: 2007-10-12.
+" @Revision:    0.0.14
 
 if &cp || exists("loaded_tlib_cmd_autoload")
     finish
@@ -17,6 +17,16 @@ function! tlib#cmd#OutputAsList(command) "{{{3
     silent! exec a:command
     redir END
     return split(lines, '\n')
+endf
+
+
+" See |:TBrowseOutput|.
+function! tlib#cmd#BrowseOutput(command) "{{{3
+    let list = tlib#cmd#OutputAsList(a:command)
+    let cmd = tlib#input#List('s', 'Output of: '. a:command, list)
+    if !empty(cmd)
+        call feedkeys(':'. cmd)
+    endif
 endf
 
 

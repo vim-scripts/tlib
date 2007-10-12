@@ -5,6 +5,10 @@
 This library provides some utility functions. There isn't much need to 
 install it unless another plugin requires you to do so.
 
+Most of the library is included in autoload files. No autocommands are 
+created. With the exception of loading ../plugin/02tlib.vim at startup 
+the library has no impact on startup time or anything else.
+
 The change-log is included at the bottom of ../plugin/02tlib.vim
 (move the cursor over the file name and type gfG)
 
@@ -29,6 +33,7 @@ Contents~
         :TScratch .......................... |:TScratch|
         :TVarArg ........................... |:TVarArg|
         :TKeyArg ........................... |:TKeyArg|
+        :TBrowseOutput ..................... |:TBrowseOutput|
         g:tlib_pick_last_item .............. |g:tlib_pick_last_item|
         g:tlib_sortprefs_threshold ......... |g:tlib_sortprefs_threshold|
         g:tlib_scratch_pos ................. |g:tlib_scratch_pos|
@@ -134,6 +139,7 @@ Contents~
         tlib#arg#Get ....................... |tlib#arg#Get()|
         tlib#arg#Let ....................... |tlib#arg#Let()|
         tlib#arg#Key ....................... |tlib#arg#Key()|
+        tlib#arg#StringAsKeyArgs ........... |tlib#arg#StringAsKeyArgs()|
         tlib#arg#Ex ........................ |tlib#arg#Ex()|
     autoload/tlib/buffer.vim
         tlib#buffer#Set .................... |tlib#buffer#Set()|
@@ -156,6 +162,7 @@ Contents~
         tlib#char#Get ...................... |tlib#char#Get()|
     autoload/tlib/cmd.vim
         tlib#cmd#OutputAsList .............. |tlib#cmd#OutputAsList()|
+        tlib#cmd#BrowseOutput .............. |tlib#cmd#BrowseOutput()|
         tlib#cmd#UseVertical ............... |tlib#cmd#UseVertical()|
     autoload/tlib/dir.vim
         tlib#dir#CanonicName ............... |tlib#dir#CanonicName()|
@@ -205,6 +212,7 @@ Contents~
     autoload/tlib/string.vim
         tlib#string#RemoveBackslashes ...... |tlib#string#RemoveBackslashes()|
         tlib#string#Chomp .................. |tlib#string#Chomp()|
+        tlib#string#Printf1 ................ |tlib#string#Printf1()|
         tlib#string#TrimLeft ............... |tlib#string#TrimLeft()|
         tlib#string#TrimRight .............. |tlib#string#TrimRight()|
         tlib#string#Strip .................. |tlib#string#Strip()|
@@ -212,6 +220,12 @@ Contents~
         tlib#tab#BufMap .................... |tlib#tab#BufMap()|
         tlib#tab#TabWinNr .................. |tlib#tab#TabWinNr()|
         tlib#tab#Set ....................... |tlib#tab#Set()|
+    autoload/tlib/type.vim
+        tlib#type#IsNumber ................. |tlib#type#IsNumber()|
+        tlib#type#IsString ................. |tlib#type#IsString()|
+        tlib#type#IsFuncref ................ |tlib#type#IsFuncref()|
+        tlib#type#IsList ................... |tlib#type#IsList()|
+        tlib#type#IsDictionary ............. |tlib#type#IsDictionary()|
     autoload/tlib/url.vim
         tlib#url#Decode .................... |tlib#url#Decode()|
         tlib#url#EncodeChar ................ |tlib#url#EncodeChar()|
@@ -273,6 +287,21 @@ plugin/02tlib.vim~
           echo 'a='. a
           echo 'b='. b
       endf
+<
+
+                                                    *:TBrowseOutput*
+TBrowseOutput COMMAND
+    Every wondered how to effciently browse the output of a command 
+    without redirecting it to a file? This command takes a command as 
+    argument and presents the output via |tlib#input#List()| so that you 
+    can easily search for a keyword (e.g. the name of a variable or 
+    function) and the like.
+    
+    If you press enter, the selected line will be copied to the command 
+    line. Press ESC to cancel browsing.
+    
+    EXAMPLES: >
+      TBrowseOutput 20verb TeaseTheCulprit
 <
 
                                                     *g:tlib_pick_last_item*
@@ -673,6 +702,9 @@ tlib#arg#Let(list, ?default='')
 tlib#arg#Key(dict, list, ?default='')
     See |:TKeyArg|.
 
+                                                    *tlib#arg#StringAsKeyArgs()*
+tlib#arg#StringAsKeyArgs(string, ?keys=[], ?evaluate=0)
+
                                                     *tlib#arg#Ex()*
 tlib#arg#Ex(arg, ?chars='%# ')
     Escape some characters in a string.
@@ -775,6 +807,10 @@ autoload/tlib/cmd.vim~
 
                                                     *tlib#cmd#OutputAsList()*
 tlib#cmd#OutputAsList(command)
+
+                                                    *tlib#cmd#BrowseOutput()*
+tlib#cmd#BrowseOutput(command)
+    See |:TBrowseOutput|.
 
                                                     *tlib#cmd#UseVertical()*
 tlib#cmd#UseVertical(?rx='')
@@ -1027,9 +1063,20 @@ autoload/tlib/progressbar.vim~
 
                                                     *tlib#progressbar#Init()*
 tlib#progressbar#Init(max, ...)
+    EXAMPLE: >
+        call tlib#progressbar#Init(20)
+        try
+            for i in range(20)
+                call tlib#progressbar#Display(i)
+                call DoSomethingThatTakesSomeTime(i)
+            endfor
+        finally
+            call tlib#progressbar#Restore()
+        endtry
+<
 
                                                     *tlib#progressbar#Display()*
-tlib#progressbar#Display(value)
+tlib#progressbar#Display(value, ...)
 
                                                     *tlib#progressbar#Restore()*
 tlib#progressbar#Restore()
@@ -1069,6 +1116,13 @@ tlib#string#RemoveBackslashes(text, ?chars=' ')
                                                     *tlib#string#Chomp()*
 tlib#string#Chomp(string)
 
+                                                    *tlib#string#Printf1()*
+tlib#string#Printf1(format, string)
+    This function deviates from |printf()| in certain ways.
+    Additional items:
+        %{rx}      ... insert escaped regexp
+        %{fuzzyrx} ... insert typo-tolerant regexp
+
                                                     *tlib#string#TrimLeft()*
 tlib#string#TrimLeft(string)
 
@@ -1092,6 +1146,25 @@ tlib#tab#TabWinNr(buffer)
 
                                                     *tlib#tab#Set()*
 tlib#tab#Set(tabnr)
+
+
+------------------------------------------------------------------------
+autoload/tlib/type.vim~
+
+                                                    *tlib#type#IsNumber()*
+tlib#type#IsNumber(expr)
+
+                                                    *tlib#type#IsString()*
+tlib#type#IsString(expr)
+
+                                                    *tlib#type#IsFuncref()*
+tlib#type#IsFuncref(expr)
+
+                                                    *tlib#type#IsList()*
+tlib#type#IsList(expr)
+
+                                                    *tlib#type#IsDictionary()*
+tlib#type#IsDictionary(expr)
 
 
 ------------------------------------------------------------------------

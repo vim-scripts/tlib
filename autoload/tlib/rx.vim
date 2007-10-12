@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-07-20.
-" @Last Change: 2007-09-11.
-" @Revision:    0.0.12
+" @Last Change: 2007-10-10.
+" @Revision:    0.0.13
 
 if &cp || exists("loaded_tlib_rx_autoload")
     finish
@@ -16,7 +16,10 @@ let loaded_tlib_rx_autoload = 1
 " magic can be one of: m, M, v, V
 " See :help 'magic'
 function! tlib#rx#Escape(text, ...) "{{{3
-    exec tlib#arg#Let([['magic', 'm']])
+    TVarArg 'magic'
+    if empty(magic)
+        let magic = 'm'
+    endif
     if magic ==# 'm'
         let chars = '^$.*\[]~'
     elseif magic ==# 'M'

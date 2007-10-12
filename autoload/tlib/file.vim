@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-14.
-" @Revision:    0.0.43
+" @Last Change: 2007-10-09.
+" @Revision:    0.0.45
 
 if &cp || exists("loaded_tlib_file_autoload")
     finish
@@ -101,7 +101,9 @@ function! tlib#file#With(fcmd, bcmd, files, ...) "{{{3
         elseif filereadable(f)
             if !empty(a:fcmd)
                 " TLogDBG a:fcmd .' '. escape(f, '%#\ ')
-                exec a:fcmd .' '. escape(f, '%#\ ')
+                " exec a:fcmd .' '. escape(f, '%#\ ')
+                " exec a:fcmd .' '. escape(f, '%# ')
+                exec a:fcmd .' '. tlib#arg#Ex(f)
                 call s:SetScrollBind(world)
             endif
         endif

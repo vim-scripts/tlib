@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-10-02.
-" @Revision:    0.16.369
+" @Last Change: 2007-10-12.
+" @Revision:    0.17.380
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
@@ -24,7 +24,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 16
+let loaded_tlib = 17
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -70,6 +70,21 @@ command! -nargs=+ TVarArg exec tlib#arg#Let([<args>])
 "       echo 'b='. b
 "   endf
 command! -nargs=+ TKeyArg exec tlib#arg#Key([<args>])
+
+
+" :display: TBrowseOutput COMMAND
+" Every wondered how to effciently browse the output of a command 
+" without redirecting it to a file? This command takes a command as 
+" argument and presents the output via |tlib#input#List()| so that you 
+" can easily search for a keyword (e.g. the name of a variable or 
+" function) and the like.
+"
+" If you press enter, the selected line will be copied to the command 
+" line. Press ESC to cancel browsing.
+"
+" EXAMPLES: >
+"   TBrowseOutput 20verb TeaseTheCulprit
+command! -nargs=1 -complete=command TBrowseOutput call tlib#cmd#BrowseOutput(<q-args>)
 
 
 
@@ -357,4 +372,9 @@ NEW:
 0.16
 NEW:
     - tlib#string#Printf1()
+
+0.17
+NEW:
+    - TBrowseOutput
+- Some minor changes
 

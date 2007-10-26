@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-09-29.
-" @Revision:    0.1.320
+" @Last Change: 2007-10-21.
+" @Revision:    0.1.374
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -51,6 +51,7 @@ let s:prototype = tlib#Object#New({
             \ 'state': 'display', 
             \ 'state_handlers': [],
             \ 'timeout': 0,
+            \ 'timeout_resolution': 2,
             \ 'type': '', 
             \ 'win_wnr': -1,
             \ })
@@ -64,13 +65,67 @@ endf
 
 function! s:prototype.Set_display_format(value) dict "{{{3
     if a:value == 'filename'
-        let self.display_format = 's:FormatFilename(world, %s)'
-        let self.tlib_UseInputListScratch = 
-                    \ 'syn match TLibMarker /\%>'. (2 + eval(g:tlib_inputlist_width_filename)) .'c |.\{-}| / | hi def link TLibMarker Special'
-        let self.tlib_UseInputListScratch .= '| syn match TLibDir /\%>'. (4 + eval(g:tlib_inputlist_width_filename)) .'c\S\{-}[\/].*$/ | hi def link TLibDir Directory'
+        call self.Set_highlight_filename()
+        let self.display_format = 'world.FormatFilename(%s)'
     else
         let self.display_format = a:value
     endif
+endf
+
+
+function! s:prototype.Set_highlight_filename() dict "{{{3
+    let self.tlib_UseInputListScratch = 'call world.Highlight_filename()'
+    "             \ 'syn match TLibMarker /\%>'. (1 + eval(g:tlib_inputlist_width_filename)) .'c |.\{-}| / | hi def link TLibMarker Special'
+    " let self.tlib_UseInputListScratch .= '| syn match TLibDir /\%>'. (4 + eval(g:tlib_inputlist_width_filename)) .'c\S\{-}[\/].*$/ | hi def link TLibDir Directory'
+endf
+
+
+function! s:prototype.Highlight_filename() dict "{{{3
+    " exec 'syn match TLibDir /\%>'. (3 + eval(g:tlib_inputlist_width_filename)) .'c \(\S:\)\?[\/].*$/ contained containedin=TLibMarker'
+    exec 'syn match TLibDir /\(\a:\|\.\.\.\S\{-}\)\?[\/][^&<>*|]*$/ contained containedin=TLibMarker'
+    exec 'syn match TLibMarker /\%>'. (1 + eval(g:tlib_inputlist_width_filename)) .'c |\( \|[[:alnum:]%-]*\)| \S.*$/ contains=TLibDir'
+    hi def link TLibMarker Special
+    hi def link TLibDir Directory
+endf
+
+
+function! s:prototype.FormatFilename(file) dict "{{{3
+    let fname = fnamemodify(a:file, ":p:t")
+    " let fname = fnamemodify(a:file, ":t")
+    " if isdirectory(a:file)
+    "     let fname .='/'
+    " endif
+    let dname = fnamemodify(a:file, ":h")
+    let dnmax = &co - max([eval(g:tlib_inputlist_width_filename), len(fname)]) - 11 - self.index_width - &fdc
+    if len(dname) > dnmax
+        let dname = '...'. strpart(fnamemodify(a:file, ":h"), len(dname) - dnmax)
+    endif
+    let marker = []
+    let bnr    = bufnr(a:file)
+    " TLogVAR a:file, bnr, self.bufnr
+    if bnr != -1
+        if bnr == self.bufnr
+            call add(marker, '%')
+        elseif buflisted(a:file)
+            if getbufvar(a:file, "&mod")
+                call add(marker, '+')
+            else
+                call add(marker, 'B')
+            endif
+        elseif bufloaded(a:file)
+            call add(marker, 'b')
+        else
+            call add(marker, '-')
+        endif
+    else
+        call add(marker, ' ')
+    endif
+    if !empty(marker)
+        call insert(marker, '|')
+        call add(marker, '|')
+        " let fname .= ' '. join(marker, '')
+    endif
+    return printf("%-". eval(g:tlib_inputlist_width_filename) ."s %s %s", fname, join(marker, ''), dname)
 endf
 
 
@@ -201,34 +256,68 @@ function! s:prototype.GetCurrentItem() dict "{{{3
 endf
 
 
-function! s:prototype.Match(text, ...) dict "{{{3
-    let mrx = '\V'. (a:0 >= 1 && a:1 ? '\C' : '')
+function! s:prototype.SetFilter() dict "{{{3
+    " let mrx = '\V'. (a:0 >= 1 && a:1 ? '\C' : '')
+    let mrx = '\V'. self.filter_format
+    let self.filter_pos = []
+    let self.filter_neg = []
     for filter in self.filter
         " TLogVAR filter
         let rx = join(reverse(filter(copy(filter), '!empty(v:val)')), '\|')
         " TLogVAR rx
         if rx[0] == g:tlib_inputlist_not
-            if len(rx) > 1 && a:text =~ mrx .'\('. rx[1:-1] .'\)'
-                return 0
+            if len(rx) > 1
+                call add(self.filter_neg, mrx .'\('. rx[1:-1] .'\)')
             endif
-        elseif a:text !~ mrx .'\('. rx .'\)'
+        else
+            call add(self.filter_pos, mrx .'\('. rx .'\)')
+        endif
+    endfor
+endf
+
+
+function! s:prototype.Match(text, ...) dict "{{{3
+    for rx in self.filter_neg
+        if a:text =~ rx
             return 0
         endif
-        " if a:text !~ mrx. self.GetRx(filter)
-        "     return 0
-        " endif
     endfor
+    for rx in self.filter_pos
+        if a:text !~ rx
+            return 0
+        endif
+    endfor
+    " for filter in self.filter
+    "     " TLogVAR filter
+    "     let rx = join(reverse(filter(copy(filter), '!empty(v:val)')), '\|')
+    "     " TLogVAR rx
+    "     if rx[0] == g:tlib_inputlist_not
+    "         if len(rx) > 1 && a:text =~ mrx .'\('. rx[1:-1] .'\)'
+    "             return 0
+    "         endif
+    "     elseif a:text !~ mrx .'\('. rx .'\)'
+    "         return 0
+    "     endif
+    "     " if a:text !~ mrx. self.GetRx(filter)
+    "     "     return 0
+    "     " endif
+    " endfor
     return 1
 endf
 
 
-function! s:prototype.MatchBaseIdx(filter_format, idx, ...) dict "{{{3
-    let mrx  = '\V'. (a:0 >= 1 && a:1 ? '\C' : '')
+function! s:prototype.MatchBaseIdx(idx) dict "{{{3
     let text = self.GetBaseItem(a:idx)
-    if !empty(a:filter_format)
-        let text = eval(call(function("printf"), self.FormatArgs(a:filter_format, text)))
+    if !empty(self.filter_format)
+        let text = eval(call(function("printf"), self.FormatArgs(self.filter_format, text)))
     endif
-    return self.Match(text, mrx)
+    return self.Match(text)
+endf
+
+
+function! s:prototype.BuildTable() dict "{{{3
+    call self.SetFilter()
+    let self.table = filter(range(1, len(self.base)), 'self.MatchBaseIdx(v:val)')
 endf
 
 
@@ -241,6 +330,11 @@ function! s:prototype.ReduceFilter() dict "{{{3
     else
         let self.filter[0][0] = self.filter[0][0][0:-2]
     endif
+endf
+
+
+function! s:prototype.SetInitialFilter(filter) dict "{{{3
+    let self.initial_filter = [[''], [a:filter]]
 endf
 
 
@@ -330,7 +424,7 @@ function! s:prototype.Retrieve(anyway) dict "{{{3
         let ra = self.retrieve_eval
         " TLogVAR ra
         if !empty(ra)
-            let back = self.SwitchWindow('win')
+            let back  = self.SwitchWindow('win')
             let world = self
             let self.base = eval(ra)
             " TLogVAR self.base
@@ -342,7 +436,7 @@ function! s:prototype.Retrieve(anyway) dict "{{{3
 endf
 
 
-function! s:prototype.DisplayHelp(world) dict "{{{3
+function! s:prototype.DisplayHelp() dict "{{{3
     let help = [
                 \ 'Help:',
                 \ 'Mouse        ... Pick an item            Letter          ... Filter the list',
@@ -354,12 +448,12 @@ function! s:prototype.DisplayHelp(world) dict "{{{3
                 \ '<Esc>        ... Abort',
                 \ ]
 
-    if a:world.allow_suspend
+    if self.allow_suspend
         call add(help,
                 \ '<c|m-z>      ... Suspend/Resume          <c-o>           ... Switch to origin')
     endif
 
-    if stridx(a:world.type, 'm') != -1
+    if stridx(self.type, 'm') != -1
         let help += [
                 \ '#, <c-space> ... (Un)Select the current item',
                 \ '<c|m-a>      ... (Un)Select all currently visible items',
@@ -367,7 +461,7 @@ function! s:prototype.DisplayHelp(world) dict "{{{3
                 \ ]
                     " \ '<c-\>        ... Show only selected',
     endif
-    for handler in a:world.key_handlers
+    for handler in self.key_handlers
         let key = get(handler, 'key_name', '')
         if !empty(key)
             let desc = get(handler, 'help', '')
@@ -406,8 +500,8 @@ function! s:prototype.Resize(hsize, vsize) dict "{{{3
 endf
 
 
-" :def: function! s:prototype.DisplayList(world, query, ?list)
-function! s:prototype.DisplayList(world, query, ...) dict "{{{3
+" :def: function! s:prototype.DisplayList(query, ?list)
+function! s:prototype.DisplayList(query, ...) dict "{{{3
     " TLogVAR a:query
     " TLogVAR self.state
     let list = a:0 >= 1 ? a:1 : []
@@ -417,12 +511,12 @@ function! s:prototype.DisplayList(world, query, ...) dict "{{{3
     if self.state == 'scroll'
         exec 'norm! '. self.offset .'zt'
     elseif self.state == 'help'
-        call self.DisplayHelp(a:world)
+        call self.DisplayHelp()
     else
         " let ll = len(list)
-        let ll = a:world.llen
+        let ll = self.llen
         " let x  = len(ll) + 1
-        let x  = a:world.index_width + 1
+        let x  = self.index_width + 1
         " TLogVAR ll
         if self.state =~ '\<display\>'
             let resize = get(self, 'resize', 0)

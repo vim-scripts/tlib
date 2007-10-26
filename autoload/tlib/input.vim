@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-10-07.
-" @Revision:    0.0.352
+" @Last Change: 2007-10-21.
+" @Revision:    0.0.381
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -123,6 +123,7 @@ function! tlib#input#ListW(world, ...) "{{{3
         let world.winview = tlib#win#GetLayout()
         call world.Reset(1)
     endif
+    " TLogVAR world.initial_index
     let key_agents = copy(g:tlib_keyagents_InputList_s)
     if stridx(world.type, 'm') != -1
         call extend(key_agents, g:tlib_keyagents_InputList_m, 'force')
@@ -182,7 +183,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                 " TLogVAR world.filter
                 if world.state =~ 'display'
                     if world.state =~ '^display'
-                        let world.table = filter(range(1, len(world.base)), 'world.MatchBaseIdx(world.filter_format, v:val)')
+                        call world.BuildTable()
                         " TLogDBG 2
                         " TLogVAR world.table
                         let world.list  = map(copy(world.table), 'world.GetBaseItem(v:val)')
@@ -213,6 +214,8 @@ function! tlib#input#ListW(world, ...) "{{{3
                             endif
                         endif
                         " TLogDBG 4
+                        " TLogVAR world.idx, world.llen, world.state
+                        " TLogDBG world.FilterIsEmpty()
                         if world.state == 'display'
                             if world.idx == '' && world.llen < g:tlib_sortprefs_threshold && !world.FilterIsEmpty()
                                 let s:world = world
@@ -227,10 +230,12 @@ function! tlib#input#ListW(world, ...) "{{{3
                                 let world.prefidx = 1
                             endif
                         endif
+                        " TLogVAR world.initial_index, world.prefidx
                         " TLogDBG 5
                         let dlist = copy(world.list)
                         if !empty(world.display_format)
                             let display_format = world.display_format
+                            " TLogVAR display_format
                             call map(dlist, 'eval(call(function("printf"), world.FormatArgs(display_format, v:val)))')
                         endif
                         " TLogVAR world.prefidx
@@ -256,15 +261,16 @@ function! tlib#input#ListW(world, ...) "{{{3
                     "     let world.offset = world.prefidx
                     " endif
                     " TLogDBG 8
-                    call world.DisplayList(world, world.query .' (filter: '. world.DisplayFilter() .'; press "?" for help)', dlist)
-                    " TLogDBG 9
+                    if !tlib#char#IsAvailable()
+                        call world.DisplayList(world.query .' (filter: '. world.DisplayFilter() .'; press "?" for help)', dlist)
+                        " TLogDBG 9
+                    endif
                     let world.state = ''
-
                 else
                     " if world.state == 'scroll'
                     "     let world.prefidx = world.offset
                     " endif
-                    call world.DisplayList(world, '')
+                    call world.DisplayList('')
                     if world.state == 'help'
                         let world.state = 'display'
                     else
@@ -275,7 +281,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                 let world.list_wnr = winnr()
 
                 " TLogVAR world.timeout
-                let c = tlib#char#Get(world.timeout)
+                let c = tlib#char#Get(world.timeout, world.timeout_resolution)
                 if world.state != ''
                     " continue
                 elseif has_key(key_agents, c)
@@ -310,7 +316,12 @@ function! tlib#input#ListW(world, ...) "{{{3
                     else
                         let world.idx = ''
                         " TLogVAR world.filter
-                        let world.filter[0][0] .= nr2char(c)
+                        if world.llen > g:tlib_inputlist_livesearch_threshold
+                            let world.filter[0][0] = input('Filter: ', world.filter[0][0] . nr2char(c))
+                            echo
+                        else
+                            let world.filter[0][0] .= nr2char(c)
+                        endif
                         " continue
                     endif
                 else
@@ -469,46 +480,6 @@ function! s:CheckAgentReturnValue(name, value) "{{{3
 endf
 
 
-function! s:FormatFilename(world, file) "{{{3
-    let fname = fnamemodify(a:file, ":p:t")
-    " let fname = fnamemodify(a:file, ":t")
-    " if isdirectory(a:file)
-    "     let fname .='/'
-    " endif
-    let dname = fnamemodify(a:file, ":h")
-    let dnmax = &co - max([eval(g:tlib_inputlist_width_filename), len(fname)]) - 11 - a:world.index_width - &fdc
-    if len(dname) > dnmax
-        let dname = '...'. strpart(fnamemodify(a:file, ":h"), len(dname) - dnmax)
-    endif
-    let marker = []
-    let bnr    = bufnr(a:file)
-    " TLogVAR a:file, bnr, a:world.bufnr
-    if bnr != -1
-        if bnr == a:world.bufnr
-            call add(marker, '%')
-        elseif buflisted(a:file)
-            if getbufvar(a:file, "&mod")
-                call add(marker, '+')
-            else
-                call add(marker, 'B')
-            endif
-        elseif bufloaded(a:file)
-            call add(marker, 'b')
-        else
-            call add(marker, '-')
-        endif
-    else
-        call add(marker, ' ')
-    endif
-    if !empty(marker)
-        call insert(marker, '|')
-        call add(marker, '|')
-        " let fname .= ' '. join(marker, '')
-    endif
-    return printf("%-". eval(g:tlib_inputlist_width_filename) ."s %s %s", fname, join(marker, ''), dname)
-endf
-
-
 " Functions related to tlib#input#EditList(type, ...) "{{{2
 
 " :def: function! tlib#input#EditList(query, list, ?timeout=0)
@@ -545,8 +516,8 @@ endf
 " its output.
 "
 " EXAMPLE: >
-"     exec 'norm! `'. matchstr(tlib#input#CommandSelect('marks'), '^ \+\zs.')
-"     exec 'norm i'. matchstr(tlib#input#CommandSelect('abbrev'), '^\S\+\s\+\zs\S\+')
+"     command! TMarks exec 'norm! `'. matchstr(tlib#input#CommandSelect('marks'), '^ \+\zs.')
+"     command! TAbbrevs exec 'norm i'. matchstr(tlib#input#CommandSelect('abbrev'), '^\S\+\s\+\zs\S\+')
 function! tlib#input#CommandSelect(command, ...) "{{{3
     TVarArg ['args', {}]
     if has_key(args, 'retrieve')

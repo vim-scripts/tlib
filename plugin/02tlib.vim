@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-10-12.
-" @Revision:    0.17.380
+" @Last Change: 2007-10-21.
+" @Revision:    0.18.390
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
@@ -24,7 +24,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 17
+let loaded_tlib = 18
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -110,6 +110,11 @@ TLet g:tlib_inputlist_width_filename = '&co / 3'
 
 " The highlight group to use for showing matches in the input list window.
 TLet g:tlib_inputlist_higroup = 'IncSearch'
+
+" If a list contains more items, don't do an incremental "live search", 
+" but use |input()| the quere the user for a filter. This is useful on 
+" slower machines or with very long lists.
+TLet g:tlib_inputlist_livesearch_threshold = 500
 
 TLet g:tlib_filename_sep = '/'
 " TLet g:tlib_filename_sep = exists('+shellslash') && !&shellslash ? '\' : '/'   " {{{2
@@ -377,4 +382,14 @@ NEW:
 NEW:
     - TBrowseOutput
 - Some minor changes
+
+0.18
+NEW:
+    - tlib/time.vim
+    - g:tlib_inputlist_livesearch_threshold
+CHANGES:
+    - tlib#input#ListD(), World: Don't redisplay the list while typing 
+    new letters; calculate filter regexps only once before filtering the 
+    list.
+    - World.vim: Minor changes to how filenames are handled.
 

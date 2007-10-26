@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-08-21.
-" @Last Change: 2007-09-11.
-" @Revision:    0.0.8
+" @Last Change: 2007-10-15.
+" @Revision:    0.0.9
 
 if &cp || exists("loaded_tlib_hook_autoload")
     finish
@@ -24,6 +24,7 @@ function! tlib#hook#Run(hook, ...) "{{{3
     if empty(hook)
         return 0
     else
+        let world = dict
         exec hook
         return 1
     endif

@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-19.
-" @Revision:    0.1.23
+" @Last Change: 2007-11-01.
+" @Revision:    0.1.28
 
 if &cp || exists("loaded_tlib_cache_autoload")
     finish
@@ -28,12 +28,20 @@ function! tlib#cache#Filename(type, ...) "{{{3
         let file  = expand('%:p')
         let file  = tlib#file#Relative(file, tlib#file#Join([dir, '..']))
     endif
+    " TLogVAR file, dir
     let mkdir = a:0 >= 2 ? a:2 : 0
     let file  = substitute(file, '\.\.\|[:&<>]\|//\+\|\\\\\+', '_', 'g')
-    let dir   = tlib#dir#PlainName(tlib#file#Join([dir, a:type, fnamemodify(file, ':h')]))
-    let file  = fnamemodify(file, ':t')
+    let dirs  = [dir, a:type]
+    let dirf  = fnamemodify(file, ':h')
+    if dirf != '.'
+        call add(dirs, dirf)
+    endif
+    let dir   = tlib#file#Join(dirs)
     " TLogVAR dir
-    " TLogVAR file
+    let dir   = tlib#dir#PlainName(dir)
+    " TLogVAR dir
+    let file  = fnamemodify(file, ':t')
+    " TLogVAR file, dir
     if mkdir && !isdirectory(dir)
         call mkdir(dir, 'p')
     endif

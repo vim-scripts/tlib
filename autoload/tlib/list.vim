@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-11.
-" @Revision:    0.0.25
+" @Last Change: 2007-11-02.
+" @Revision:    0.0.30
 
 if &cp || exists("loaded_tlib_list_autoload")
     finish
@@ -141,6 +141,28 @@ endf
 function! s:GetNthElement(n, lists, default) "{{{3
     " TLogVAR a:n, a:lists, a:default
     return map(copy(a:lists), 'get(v:val, a:n, a:default)')
+endf
+
+
+function! tlib#list#Uniq(list, ...) "{{{3
+    TVarArg ['get_value', '']
+    let s:uniq_values = []
+    if empty(get_value)
+        call filter(a:list, 's:UniqValue(v:val)')
+    else
+        call filter(a:list, 's:UniqValue(eval(printf(get_value, string(v:val))))')
+    endif
+    return a:list
+endf
+
+
+function! s:UniqValue(value) "{{{3
+    if index(s:uniq_values, a:value) == -1
+        call add(s:uniq_values, a:value)
+        return true
+    else
+        return false
+    endif
 endf
 
 

@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-11.
-" @Revision:    0.0.22
+" @Last Change: 2007-11-01.
+" @Revision:    0.0.28
 
 if &cp || exists("loaded_tlib_dir_autoload")
     finish
@@ -28,14 +28,20 @@ endf
 "   tlib#dir#PlainName('foo/bar/')
 "   => 'foo/bar'
 function! tlib#dir#PlainName(dirname) "{{{3
-    return substitute(a:dirname, tlib#rx#Escape(g:tlib_filename_sep).'\+$', '', '')
+    let dirname = a:dirname
+    while dirname[-1 : -1] == g:tlib_filename_sep
+        let dirname = dirname[0 : -2]
+    endwh
+    return dirname
+    " return substitute(a:dirname, tlib#rx#Escape(g:tlib_filename_sep).'\+$', '', '')
 endf
 
 
 " Create a directory if it doesn't already exist.
 function! tlib#dir#Ensure(dir) "{{{3
     if !isdirectory(a:dir)
-        return mkdir(a:dir, 'p')
+        let dir = tlib#dir#PlainName(a:dir)
+        return mkdir(dir, 'p')
     endif
     return 1
 endf

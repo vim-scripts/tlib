@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-10-21.
-" @Revision:    0.18.390
+" @Last Change: 2007-11-06.
+" @Revision:    0.19.416
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
@@ -24,7 +24,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 18
+let loaded_tlib = 19
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -40,7 +40,7 @@ set cpo&vim
 command! -nargs=+ TLet if !exists(matchstr(<q-args>, '^[^=[:space:]]\+')) | exec 'let '. <q-args> | endif
 
 
-" Open a scratch buffer (a buffer without a file). >
+" Open a scratch buffer (a buffer without a file).
 "   TScratch  ... use split window
 "   TScratch! ... use the whole frame
 " This command takes an (inner) dictionnary as optional argument.
@@ -115,6 +115,9 @@ TLet g:tlib_inputlist_higroup = 'IncSearch'
 " but use |input()| the quere the user for a filter. This is useful on 
 " slower machines or with very long lists.
 TLet g:tlib_inputlist_livesearch_threshold = 500
+
+" Extra tags for |tlib#tag#Retrieve()|. Can also be buffer-local.
+TLet g:tlib_tags_extra = ''
 
 TLet g:tlib_filename_sep = '/'
 " TLet g:tlib_filename_sep = exists('+shellslash') && !&shellslash ? '\' : '/'   " {{{2
@@ -392,4 +395,16 @@ CHANGES:
     new letters; calculate filter regexps only once before filtering the 
     list.
     - World.vim: Minor changes to how filenames are handled.
+
+0.19
+NEW:
+    - tag.vim
+FIX:
+    - dir.vim: Use plain dir name in tlib#dir#Ensure()
+    - tlib#input#List(): An initial filter argument creates [[filter]] 
+    and not as before [[''], [filter]].
+    - tlib#input#List(): When type was "si" and the item was picked by 
+    filter, the wrong index was returned.
+    - tlib#input#List(): Don't check if chars are typed when displaying 
+    the list for the first time.
 

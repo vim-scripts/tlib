@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-09-19.
-" @Revision:    0.0.155
+" @Last Change: 2007-10-26.
+" @Revision:    0.0.157
 
 if &cp || exists("loaded_tlib_buffer_autoload")
     finish
@@ -237,5 +237,10 @@ function! tlib#buffer#InsertText0(text, ...) "{{{3
     endif
     " TLogVAR keyargs.shift
     return tlib#buffer#InsertText(a:text, keyargs)
+endf
+
+
+function! tlib#buffer#CurrentByte() "{{{3
+    return line2byte(line('.')) + col('.')
 endf
 

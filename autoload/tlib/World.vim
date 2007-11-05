@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-10-21.
-" @Revision:    0.1.374
+" @Last Change: 2007-11-03.
+" @Revision:    0.1.383
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -83,7 +83,7 @@ endf
 function! s:prototype.Highlight_filename() dict "{{{3
     " exec 'syn match TLibDir /\%>'. (3 + eval(g:tlib_inputlist_width_filename)) .'c \(\S:\)\?[\/].*$/ contained containedin=TLibMarker'
     exec 'syn match TLibDir /\(\a:\|\.\.\.\S\{-}\)\?[\/][^&<>*|]*$/ contained containedin=TLibMarker'
-    exec 'syn match TLibMarker /\%>'. (1 + eval(g:tlib_inputlist_width_filename)) .'c |\( \|[[:alnum:]%-]*\)| \S.*$/ contains=TLibDir'
+    exec 'syn match TLibMarker /\%>'. (1 + eval(g:tlib_inputlist_width_filename)) .'c |\( \|[[:alnum:]%+-]*\)| \S.*$/ contains=TLibDir'
     hi def link TLibMarker Special
     hi def link TLibDir Directory
 endf
@@ -488,13 +488,14 @@ endf
 
 
 function! s:prototype.Resize(hsize, vsize) dict "{{{3
+    " TLogVAR self.scratch_vertical, a:hsize, a:vsize
     if self.scratch_vertical
         if a:vsize
-            exec 'vert resize '. a:vsize
+            exec 'vert resize '. eval(a:vsize)
         endif
     else
         if a:hsize
-            exec 'resize '. a:hsize
+            exec 'resize '. eval(a:hsize)
         endif
     endif
 endf
@@ -530,6 +531,7 @@ function! s:prototype.DisplayList(query, ...) dict "{{{3
             " let w = winwidth(0) - &fdc - 1
             let lines = copy(list)
             let lines = map(lines, 'printf("%-'. w .'.'. w .'s", substitute(v:val, ''[[:cntrl:][:space:]]'', " ", "g"))')
+            " TLogVAR lines
             call append(0, lines)
             norm! Gddgg
         endif

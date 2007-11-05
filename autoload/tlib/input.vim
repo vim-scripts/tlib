@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-10-21.
-" @Revision:    0.0.381
+" @Last Change: 2007-11-03.
+" @Revision:    0.0.407
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -89,7 +89,8 @@ function! tlib#input#List(type, ...) "{{{3
         let world.key_handlers     = filter(copy(handlers), 'has_key(v:val, "key")')
         let filter                 = tlib#list#Find(handlers, 'has_key(v:val, "filter")', '', 'v:val.filter')
         if !empty(filter)
-            let world.initial_filter = [[''], [filter]]
+            " let world.initial_filter = [[''], [filter]]
+            let world.initial_filter = [[filter]]
             " TLogVAR world.initial_filter
         endif
     endif
@@ -139,6 +140,7 @@ function! tlib#input#ListW(world, ...) "{{{3
     let lastsearch  = @/
     let @/ = ''
     let &laststatus = 2
+    let initial_display = 1
 
     try
         while !empty(world.state) && world.state !~ '^exit' && (world.show_empty || !empty(world.base))
@@ -232,6 +234,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                         endif
                         " TLogVAR world.initial_index, world.prefidx
                         " TLogDBG 5
+                        " TLogVAR world.list
                         let dlist = copy(world.list)
                         if !empty(world.display_format)
                             let display_format = world.display_format
@@ -245,6 +248,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                         endif
                         " TLogVAR dindex
                         let dlist = map(range(0, world.llen - 1), 'printf("%0'. world.index_width .'d", dindex[v:val]) .": ". dlist[v:val]')
+                        " TLogVAR dlist
                     endif
                     " TLogDBG 7
                     " TLogVAR world.prefidx, world.offset
@@ -261,8 +265,9 @@ function! tlib#input#ListW(world, ...) "{{{3
                     "     let world.offset = world.prefidx
                     " endif
                     " TLogDBG 8
-                    if !tlib#char#IsAvailable()
+                    if initial_display || !tlib#char#IsAvailable()
                         call world.DisplayList(world.query .' (filter: '. world.DisplayFilter() .'; press "?" for help)', dlist)
+                        let initial_display = 0
                         " TLogDBG 9
                     endif
                     let world.state = ''
@@ -307,10 +312,12 @@ function! tlib#input#ListW(world, ...) "{{{3
                 elseif c >= 32
                     let world.state = 'display'
                     let numbase = get(world.numeric_chars, c, -99999)
+                    " TLogVAR numbase, world.numeric_chars, c
                     if numbase != -99999
                         let world.idx .= (c - numbase)
                         if len(world.idx) == world.index_width
                             let world.prefidx = world.idx
+                            " TLogVAR world.prefidx
                             throw 'pick'
                         endif
                     else
@@ -326,6 +333,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                     endif
                 else
                     let world.state = 'redisplay'
+                    " let world.state = 'continue'
                 endif
 
             catch /^pick$/
@@ -344,7 +352,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                     if empty(world.state)
                         " TLogVAR world.state
                         if stridx(world.type, 'i') != -1
-                            let world.rv = world.llen == 1 ? 1 : world.prefidx
+                            let world.rv = world.GetBaseIdx(world.llen == 1 ? 1 : world.prefidx)
                         else
                             if world.llen == 1
                                 " TLogVAR world.llen
@@ -378,24 +386,36 @@ function! tlib#input#ListW(world, ...) "{{{3
         " TLogVAR world.idx
         " TLogVAR world.prefidx
         " TLogVAR world.rv
+        " TLogVAR world.type, world.state, world.return_agent, world.index_table, world.rv
         if world.state =~ '\<suspend\>'
+            " TLogDBG 'return suspended'
             " TLogVAR world.prefidx
             " exec world.prefidx
             return
         elseif world.state =~ '\<empty\>'
+            " TLogDBG 'return empty'
             return stridx(world.type, 'm') != -1 ? [] : stridx(world.type, 'i') != -1 ? 0 : ''
         elseif !empty(world.return_agent)
+            " TLogDBG 'return agent'
             " TLogVAR world.return_agent
             call world.CloseScratch()
             " TAssert IsNotEmpty(world.scratch)
             return call(world.return_agent, [world, world.GetSelectedItems(world.rv)])
         elseif stridx(world.type, 'w') != -1
+            " TLogDBG 'return world'
             return world
         elseif stridx(world.type, 'm') != -1
+            " TLogDBG 'return multi'
             return world.GetSelectedItems(world.rv)
-        elseif stridx(world.type, 'i') != -1 && !empty(world.index_table)
-            return world.index_table[world.rv - 1]
+        elseif stridx(world.type, 'i') != -1
+            " TLogDBG 'return index'
+            if empty(world.index_table)
+                return world.rv
+            else
+                return world.index_table[world.rv - 1]
+            endif
         else
+            " TLogDBG 'return normal'
             return world.rv
         endif
 

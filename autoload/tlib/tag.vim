@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-11-01.
-" @Last Change: 2007-11-04.
-" @Revision:    0.0.28
+" @Last Change: 2007-11-11.
+" @Revision:    0.0.44
 
 if &cp || exists("loaded_tlib_tag_autoload")
     finish
@@ -16,6 +16,26 @@ let loaded_tlib_tag_autoload = 1
 " Get all tags matching rx. Basically, this function simply calls 
 " |taglist()|, but when extra_tags is true, the list of the tag files 
 " (see 'tags') is temporarily expanded with |g:tlib_tags_extra|.
+"
+" Example use:
+" If want to include tags for, eg, JDK, normal tags use can become slow. 
+" You could proceed as follows:
+"     1. Create a tags file for the JDK sources. When creating the tags 
+"     file, make sure to include inheritance information and the like 
+"     (command-line options like --fields=+iaSm --extra=+q should be ok).
+"     In this example, we want tags only for public methods (there are 
+"     most likely better ways to do this): >
+"          ctags -R --fields=+iaSm --extra=+q ${JAVA_HOME}/src
+"          head -n 6 tags > tags0
+"          grep access:public tags >> tags0
+" <    2. Say 'tags' included project specific tags files. In 
+"      ~/vimfiles/after/ftplugin/java.vim insert: >
+"          let b:tlib_tags_extra = $JAVA_HOME .'/tags0'
+" <    3. When this function is invoked as >
+"          echo tlib#tag#Retrieve('print')
+" <    It will return only project-local tags. If it is invoked as >
+"          echo tlib#tag#Retrieve('print', 1)
+" <    tags from the JDK will be included.
 function! tlib#tag#Retrieve(rx, ...) "{{{3
     TVarArg ['extra_tags', 0]
     if extra_tags
@@ -43,18 +63,24 @@ endf
 " regexp, with the exception of the kind field that is a list of chars). 
 " For the use of the optional use_extra argument see 
 " |tlib#tag#Retrieve()|.
-" :def: function! tlib#tag#Collect(constraints, ?use_extra=0, ?match_front=0)
+" :def: function! tlib#tag#Collect(constraints, ?use_extra=1, ?match_front=1)
 function! tlib#tag#Collect(constraints, ...) "{{{3
-    TVarArg ['use_extra', 0], ['match_front', 0]
+    TVarArg ['use_extra', 0], ['match_end', 1], ['match_front', 1]
     " TLogVAR a:constraints, use_extra
     let rx = get(a:constraints, 'name', '')
     if empty(rx) || rx == '*'
         let rx = '.'
     else
-        let rx = '\C^'. tlib#rx#Escape(rx)
-        if !match_front
-            let rx .= '$'
+        let rxl = ['\C']
+        if match_front
+            call add(rxl, '^')
         endif
+        " call add(rxl, tlib#rx#Escape(rx))
+        call add(rxl, rx)
+        if match_end
+            call add(rxl, '$')
+        endif
+        let rx = join(rxl, '')
     endif
     " TLogVAR rx, use_extra
     let tags = tlib#tag#Retrieve(rx, use_extra)
@@ -81,6 +107,12 @@ function! tlib#tag#Format(tag) "{{{3
         let name = substitute(name, '^/\^\?\s*', '', '')
         let name = substitute(name, '\s*\$\?/$', '', '')
         let name = substitute(name, '\s\{2,}', ' ', 'g')
+        let tsub = tlib#var#Get('tlib_tag_substitute', 'bg')
+        if has_key(tsub, &filetype)
+            for [rx, rplc, sub] in tsub[&filetype]
+                let name = substitute(name, rx, rplc, sub)
+            endfor
+        endif
     else
         let name = a:tag.name
     endif

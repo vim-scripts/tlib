@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-11-06.
-" @Revision:    0.19.416
+" @Last Change: 2007-11-11.
+" @Revision:    0.20.433
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
@@ -24,7 +24,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 19
+let loaded_tlib = 20
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -116,8 +116,27 @@ TLet g:tlib_inputlist_higroup = 'IncSearch'
 " slower machines or with very long lists.
 TLet g:tlib_inputlist_livesearch_threshold = 500
 
-" Extra tags for |tlib#tag#Retrieve()|. Can also be buffer-local.
+" If true, show some indicators about the status of a filename (eg 
+" buflisted(), bufloaded() etc.).
+" This is disabled by default because vim checks also for the file on 
+" disk when doing this.
+TLet g:tlib_inputlist_filename_indicators = 0
+
+" Extra tags for |tlib#tag#Retrieve()| (see there). Can also be buffer-local.
 TLet g:tlib_tags_extra = ''
+
+" Filter the tag description through |substitute()| for these filetypes. 
+" This applies only if the tag cmd field (see |taglist()|) is used.
+" :nodefault:
+TLet g:tlib_tag_substitute = {
+            \ 'java': [['\s*{\s*$', '', '']],
+            \ 'ruby': [['\<\(def\|class\|module\)\>\s\+', '', '']],
+            \ 'vim':  [
+            \   ['^\s*com\%[mand]!\?\(\s\+-\S\+\)*\s*\u\w*\zs.*$', '', ''],
+            \   ['^\s*\(let\|aug\%[roup]\|fu\%[nction]!\?\|com\%[mand]!\?\(\s\+-\S\+\)*\)\s*', '', ''],
+            \   ['"\?\s*{{{\d.*$', '', ''],
+            \ ],
+            \ }
 
 TLet g:tlib_filename_sep = '/'
 " TLet g:tlib_filename_sep = exists('+shellslash') && !&shellslash ? '\' : '/'   " {{{2
@@ -407,4 +426,10 @@ FIX:
     filter, the wrong index was returned.
     - tlib#input#List(): Don't check if chars are typed when displaying 
     the list for the first time.
+
+0.20
+CHANGES:
+- The arguments of tlib#tag#Collect() have changed.
+- tlib#input#List(): The view can be "suspended" on initial display.
+- tlib#input#List(): Follow/trace cursor functionality
 

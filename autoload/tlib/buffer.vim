@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-10-26.
-" @Revision:    0.0.157
+" @Last Change: 2007-11-11.
+" @Revision:    0.0.173
 
 if &cp || exists("loaded_tlib_buffer_autoload")
     finish
@@ -115,14 +115,16 @@ function! tlib#buffer#ViewLine(line, ...) "{{{3
         TVarArg 'pos'
         let ln = matchstr(a:line, '^\d\+')
         let lt = matchstr(a:line, '^\d\+: \zs.*')
+        TLogVAR pos, ln, lt
         exec ln
         if empty(pos)
             let pos = tlib#var#Get('tlib_viewline_position', 'wbg')
         endif
+        " TLogVAR pos
         if !empty(pos)
             exec 'norm! '. pos
         endif
-        let @/ = '\V\%'. ln .'l'. escape(lt, '\')
+        let @/ = '\%'. ln .'l.*'
     endif
 endf
 

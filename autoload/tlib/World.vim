@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-11-03.
-" @Revision:    0.1.383
+" @Last Change: 2007-11-11.
+" @Revision:    0.1.408
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -26,12 +26,14 @@ let s:prototype = tlib#Object#New({
             \ 'display_format': '',
             \ 'filter': [['']],
             \ 'filter_format': '',
+            \ 'follow_cursor': '',
             \ 'index_table': [],
             \ 'initial_filter': [['']],
             \ 'initial_index': 1,
             \ 'initialized': 0,
             \ 'key_handlers': [],
-            \ 'list': [], 
+            \ 'list': [],
+            \ 'next_state': '',
             \ 'numeric_chars': tlib#var#Get('tlib_numeric_chars', 'bg'),
             \ 'offset': 1,
             \ 'offset_horizontal': 0,
@@ -83,7 +85,7 @@ endf
 function! s:prototype.Highlight_filename() dict "{{{3
     " exec 'syn match TLibDir /\%>'. (3 + eval(g:tlib_inputlist_width_filename)) .'c \(\S:\)\?[\/].*$/ contained containedin=TLibMarker'
     exec 'syn match TLibDir /\(\a:\|\.\.\.\S\{-}\)\?[\/][^&<>*|]*$/ contained containedin=TLibMarker'
-    exec 'syn match TLibMarker /\%>'. (1 + eval(g:tlib_inputlist_width_filename)) .'c |\( \|[[:alnum:]%+-]*\)| \S.*$/ contains=TLibDir'
+    exec 'syn match TLibMarker /\%>'. (1 + eval(g:tlib_inputlist_width_filename)) .'c |\( \|[[:alnum:]%*+-]*\)| \S.*$/ contains=TLibDir'
     hi def link TLibMarker Special
     hi def link TLibDir Directory
 endf
@@ -101,7 +103,7 @@ function! s:prototype.FormatFilename(file) dict "{{{3
         let dname = '...'. strpart(fnamemodify(a:file, ":h"), len(dname) - dnmax)
     endif
     let marker = []
-    let bnr    = bufnr(a:file)
+    let bnr = bufnr(a:file)
     " TLogVAR a:file, bnr, self.bufnr
     if bnr != -1
         if bnr == self.bufnr
@@ -113,18 +115,15 @@ function! s:prototype.FormatFilename(file) dict "{{{3
                 call add(marker, 'B')
             endif
         elseif bufloaded(a:file)
-            call add(marker, 'b')
+            call add(marker, 'h')
         else
-            call add(marker, '-')
+            call add(marker, 'u')
         endif
     else
         call add(marker, ' ')
     endif
-    if !empty(marker)
-        call insert(marker, '|')
-        call add(marker, '|')
-        " let fname .= ' '. join(marker, '')
-    endif
+    call insert(marker, '|')
+    call add(marker, '|')
     return printf("%-". eval(g:tlib_inputlist_width_filename) ."s %s %s", fname, join(marker, ''), dname)
 endf
 
@@ -256,6 +255,21 @@ function! s:prototype.GetCurrentItem() dict "{{{3
 endf
 
 
+function! s:prototype.CurrentItem() dict "{{{3
+    if stridx(self.type, 'i') != -1
+        return self.GetBaseIdx(self.llen == 1 ? 1 : self.prefidx)
+    else
+        if self.llen == 1
+            " TLogVAR self.llen
+            return self.list[0]
+        elseif self.prefidx > 0
+            " TLogVAR self.prefidx
+            return self.GetCurrentItem()
+        endif
+    endif
+endf
+
+
 function! s:prototype.SetFilter() dict "{{{3
     " let mrx = '\V'. (a:0 >= 1 && a:1 ? '\C' : '')
     let mrx = '\V'. self.filter_format
@@ -334,7 +348,8 @@ endf
 
 
 function! s:prototype.SetInitialFilter(filter) dict "{{{3
-    let self.initial_filter = [[''], [a:filter]]
+    " let self.initial_filter = [[''], [a:filter]]
+    let self.initial_filter = [[a:filter]]
 endf
 
 
@@ -623,4 +638,17 @@ function! s:prototype.SwitchWindow(where) dict "{{{3
     return tlib#win#Set(wnr)
 endf
 
+
+function! s:prototype.FollowCursor() dict "{{{3
+    if !empty(self.follow_cursor)
+        let back = self.SwitchWindow('win')
+        " TLogVAR back
+        " TLogDBG winnr()
+        try
+            call call(self.follow_cursor, [self, [self.CurrentItem()]])
+        finally
+            exec back
+        endtry
+    endif
+endf
 

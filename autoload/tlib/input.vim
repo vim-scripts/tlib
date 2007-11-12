@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-11-03.
-" @Revision:    0.0.407
+" @Last Change: 2007-11-11.
+" @Revision:    0.0.436
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -76,8 +76,8 @@ function! tlib#input#List(type, ...) "{{{3
         call world.Set_display_format(tlib#list#Find(handlers, 'has_key(v:val, "display_format")', '', 'v:val.display_format'))
         let world.initial_index    = tlib#list#Find(handlers, 'has_key(v:val, "initial_index")', 1, 'v:val.initial_index')
         let world.index_table      = tlib#list#Find(handlers, 'has_key(v:val, "index_table")', [], 'v:val.index_table')
-        let world.state_handlers   = filter(copy(handlers), 'has_key(v:val, "state")')
-        let world.post_handlers    = filter(copy(handlers), 'has_key(v:val, "postprocess")')
+        let world.state_handlers   = filter(copy(handlers),   'has_key(v:val, "state")')
+        let world.post_handlers    = filter(copy(handlers),   'has_key(v:val, "postprocess")')
         let world.filter_format    = tlib#list#Find(handlers, 'has_key(v:val, "filter_format")', '', 'v:val.filter_format')
         let world.return_agent     = tlib#list#Find(handlers, 'has_key(v:val, "return_agent")', '', 'v:val.return_agent')
         let world.resize           = tlib#list#Find(handlers, 'has_key(v:val, "resize")', '', 'v:val.resize')
@@ -267,6 +267,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                     " TLogDBG 8
                     if initial_display || !tlib#char#IsAvailable()
                         call world.DisplayList(world.query .' (filter: '. world.DisplayFilter() .'; press "?" for help)', dlist)
+                        call world.FollowCursor()
                         let initial_display = 0
                         " TLogDBG 9
                     endif
@@ -280,10 +281,22 @@ function! tlib#input#ListW(world, ...) "{{{3
                         let world.state = 'display'
                     else
                         let world.state = ''
+                        call world.FollowCursor()
                     endif
                 endif
                 " TAssert IsNotEmpty(world.scratch)
                 let world.list_wnr = winnr()
+
+                " TLogVAR world.next_state, world.state
+                if !empty(world.next_state)
+                    let world.state = world.next_state
+                    let world.next_state = ''
+                endif
+
+                if world.state =~ '\<suspend\>'
+                    let world = tlib#agent#SuspendToParentWindow(world, world.rv)
+                    continue
+                endif
 
                 " TLogVAR world.timeout
                 let c = tlib#char#Get(world.timeout, world.timeout_resolution)
@@ -351,17 +364,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                     " TLogVAR world.list
                     if empty(world.state)
                         " TLogVAR world.state
-                        if stridx(world.type, 'i') != -1
-                            let world.rv = world.GetBaseIdx(world.llen == 1 ? 1 : world.prefidx)
-                        else
-                            if world.llen == 1
-                                " TLogVAR world.llen
-                                let world.rv = world.list[0]
-                            elseif world.prefidx > 0
-                                " TLogVAR world.prefidx
-                                let world.rv = world.GetCurrentItem()
-                            endif
-                        endif
+                        let world.rv = world.CurrentItem()
                     endif
                     for handler in world.post_handlers
                         let state = get(handler, 'postprocess', '')

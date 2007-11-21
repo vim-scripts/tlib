@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-11-11.
-" @Revision:    0.0.173
+" @Last Change: 2007-11-16.
+" @Revision:    0.0.238
 
 if &cp || exists("loaded_tlib_buffer_autoload")
     finish
@@ -115,7 +115,7 @@ function! tlib#buffer#ViewLine(line, ...) "{{{3
         TVarArg 'pos'
         let ln = matchstr(a:line, '^\d\+')
         let lt = matchstr(a:line, '^\d\+: \zs.*')
-        TLogVAR pos, ln, lt
+        " TLogVAR pos, ln, lt
         exec ln
         if empty(pos)
             let pos = tlib#var#Get('tlib_viewline_position', 'wbg')
@@ -195,17 +195,47 @@ function! tlib#buffer#InsertText(text, ...) "{{{3
         let post = line
     endif
     " TLogVAR lineno, line, pre, post
-    let text = split(pre . a:text . post, '\n', 1)
+    let text0 = pre . a:text . post
+    let text  = split(text0, '\n', 1)
     " TLogVAR text
     let icol = len(pre)
+    " exec 'norm! '. lineno .'G'
+    call cursor(lineno, col)
     if indent && col > 1
-        let idt = repeat(' ', icol)
+		if &fo =~# '[or]'
+			" This doesn't work because it's not guaranteed that the 
+			" cursor is set.
+			let cline = getline('.')
+			norm! a
+			"norm! o
+			" TAssertExec redraw | sleep 3
+			let idt = strpart(getline('.'), 0, col('.') + shift)
+			" TLogVAR idt
+			let idtl = len(idt)
+			-1,.delete
+			" TAssertExec redraw | sleep 3
+			call append(lineno - 1, cline)
+			call cursor(lineno, col)
+			" TAssertExec redraw | sleep 3
+			if idtl == 0 && icol != 0
+				let idt = matchstr(pre, '^\s\+')
+				let idtl = len(idt)
+			endif
+		else
+			let [m_0, idt, iline; rest] = matchlist(pre, '^\(\s*\)\(.*\)$')
+			let idtl = len(idt)
+		endif
+		if idtl < icol
+			let idt .= repeat(' ', icol - idtl)
+		endif
+        " TLogVAR idt
         for i in range(1, len(text) - 1)
             let text[i] = idt . text[i]
         endfor
         " TLogVAR text
     endif
-    exec 'norm! '. lineno .'Gdd'
+    " exec 'norm! '. lineno .'Gdd'
+    norm! dd
     call append(lineno - 1, text)
     let tlen = len(text)
     let posshift = matchstr(pos, '\d\+')

@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-11-11.
-" @Revision:    0.20.433
+" @Last Change: 2007-11-19.
+" @Revision:    0.21.444
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
@@ -24,7 +24,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 20
+let loaded_tlib = 21
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -432,4 +432,8 @@ CHANGES:
 - The arguments of tlib#tag#Collect() have changed.
 - tlib#input#List(): The view can be "suspended" on initial display.
 - tlib#input#List(): Follow/trace cursor functionality
+
+0.21
+- tlib#buffer#InsertText(): Respect tabs and (experimental) formatoptions+=or
+- tlib/syntax.vim: Syntax-related functions
 

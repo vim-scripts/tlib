@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-11-11.
-" @Revision:    0.0.436
+" @Last Change: 2007-11-14.
+" @Revision:    0.0.437
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -118,10 +118,7 @@ function! tlib#input#ListW(world, ...) "{{{3
     elseif !world.initialized
         " TLogVAR world.initialized, world.win_wnr, world.bufnr
         let world.initialized = 1
-        let world.win_wnr = winnr()
-        let world.bufnr   = bufnr('%')
-        let world.cursor  = getpos('.')
-        let world.winview = tlib#win#GetLayout()
+        call world.SetOrigin(1)
         call world.Reset(1)
     endif
     " TLogVAR world.initial_index

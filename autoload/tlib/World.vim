@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-11-11.
-" @Revision:    0.1.408
+" @Last Change: 2007-11-19.
+" @Revision:    0.1.421
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -98,6 +98,7 @@ function! s:prototype.FormatFilename(file) dict "{{{3
     "     let fname .='/'
     " endif
     let dname = fnamemodify(a:file, ":h")
+    " let dname = pathshorten(fnamemodify(a:file, ":h"))
     let dnmax = &co - max([eval(g:tlib_inputlist_width_filename), len(fname)]) - 11 - self.index_width - &fdc
     if len(dname) > dnmax
         let dname = '...'. strpart(fnamemodify(a:file, ":h"), len(dname) - dnmax)
@@ -650,5 +651,31 @@ function! s:prototype.FollowCursor() dict "{{{3
             exec back
         endtry
     endif
+endf
+
+
+function! s:prototype.SetOrigin(...) dict "{{{3
+    TVarArg ['winview', 0]
+    let self.win_wnr = winnr()
+    let self.bufnr   = bufnr('%')
+    let self.cursor  = getpos('.')
+    if winview
+        let self.winview = tlib#win#GetLayout()
+    endif
+    return self
+endf
+
+
+function! s:prototype.RestoreOrigin(...) dict "{{{3
+    TVarArg ['winview', 0]
+    if winview
+        call tlib#win#SetLayout(self.winview)
+    endif
+    " TLogVAR self.win_wnr, self.bufnr, self.cursor
+    if self.win_wnr != winnr()
+        exec self.win_wnr .'wincmd w'
+    endif
+    exec 'buffer! '. self.bufnr
+    call setpos('.', self.cursor)
 endf
 

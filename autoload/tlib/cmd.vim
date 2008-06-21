@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-08-23.
-" @Last Change: 2007-10-12.
-" @Revision:    0.0.14
+" @Last Change: 2008-03-06.
+" @Revision:    0.0.20
 
 if &cp || exists("loaded_tlib_cmd_autoload")
     finish
@@ -13,6 +13,7 @@ let loaded_tlib_cmd_autoload = 1
 
 
 function! tlib#cmd#OutputAsList(command) "{{{3
+    " let lines = ''
     redir => lines
     silent! exec a:command
     redir END
@@ -45,4 +46,11 @@ function! tlib#cmd#UseVertical(...) "{{{3
     return h0 =~ rx0
 endf
 
+
+" Print the time in seconds a command takes.
+function! tlib#cmd#Time(cmd) "{{{3
+    let start = localtime()
+    exec a:cmd
+    echom 'Time: '. (localtime() - start) .'s: '. a:cmd
+endf
 

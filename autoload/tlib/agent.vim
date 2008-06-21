@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-24.
-" @Last Change: 2007-10-05.
-" @Revision:    0.1.137
+" @Last Change: 2008-03-08.
+" @Revision:    0.1.140
 
 if &cp || exists("loaded_tlib_agent_autoload") "{{{2
     finish
@@ -256,6 +256,13 @@ function! tlib#agent#SelectAll(world, selected) "{{{3
     for i in listrange
         call a:world.SelectItem(mode, i)
     endfor
+    let a:world.state = 'display keepcursor'
+    return a:world
+endf
+
+
+function! tlib#agent#ToggleStickyList(world, selected) "{{{3
+    let a:world.sticky = !a:world.sticky
     let a:world.state = 'display keepcursor'
     return a:world
 endf

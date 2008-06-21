@@ -3,18 +3,20 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2007-11-19.
-" @Revision:    0.21.444
+" @Last Change: 2008-06-15.
+" @Revision:    460
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
 "
 " TODO:
+" - tlib#agent#SwitchLayout(): switch between horizontal and vertical 
+"   layout for the list
 " - tlib#cache#Purge(): delete old cache files (for the moment use find)
 " - tlib#file#Relative(): currently relies on cwd to be set
 " - tlib#input#EditList(): Disable selection by index number
 " - tlib#input#List(): Some kind of command line to edit some 
-"   preferences on the fly
+"   preferences (sort etc.) on the fly
 " - tlib#input#List(): Make commands accessible via popup-menu
 
 if &cp || exists("loaded_tlib")
@@ -24,7 +26,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 21
+let loaded_tlib = 23
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -428,7 +430,6 @@ FIX:
     the list for the first time.
 
 0.20
-CHANGES:
 - The arguments of tlib#tag#Collect() have changed.
 - tlib#input#List(): The view can be "suspended" on initial display.
 - tlib#input#List(): Follow/trace cursor functionality
@@ -436,4 +437,15 @@ CHANGES:
 0.21
 - tlib#buffer#InsertText(): Respect tabs and (experimental) formatoptions+=or
 - tlib/syntax.vim: Syntax-related functions
+
+0.22
+- FIX: very magic mode for tlib#rx#Escape() (thanks A Politz)
+- FIX: tlib#arg#Ex: escape "!"
+
+0.23
+- Respect the setting of g:tlib_inputlist_filename_indicators
+- tlib#input#List(): Reset syntax on resume; option to make list window "sticky"
+- tlib#agent#ToggleStickyList()
+- Simplified tlib#url#Decode()
+- tlib#arg#Ex(): use fnameescape() if available
 

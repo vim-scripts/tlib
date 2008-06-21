@@ -25,7 +25,7 @@ sure, you have the current version of vimball (vimscript #1502)
 installed.
 
 
-------------------------------------------------------------------------
+========================================================================
 Contents~
 
     plugin/02tlib.vim
@@ -132,6 +132,7 @@ Contents~
         tlib#agent#SelectUp ..................... |tlib#agent#SelectUp()|
         tlib#agent#SelectDown ................... |tlib#agent#SelectDown()|
         tlib#agent#SelectAll .................... |tlib#agent#SelectAll()|
+        tlib#agent#ToggleStickyList ............. |tlib#agent#ToggleStickyList()|
         tlib#agent#EditItem ..................... |tlib#agent#EditItem()|
         tlib#agent#NewItem ...................... |tlib#agent#NewItem()|
         tlib#agent#DeleteItems .................. |tlib#agent#DeleteItems()|
@@ -181,6 +182,7 @@ Contents~
         tlib#cmd#OutputAsList ................... |tlib#cmd#OutputAsList()|
         tlib#cmd#BrowseOutput ................... |tlib#cmd#BrowseOutput()|
         tlib#cmd#UseVertical .................... |tlib#cmd#UseVertical()|
+        tlib#cmd#Time ........................... |tlib#cmd#Time()|
     autoload/tlib/comments.vim
         tlib#comments#Comments .................. |tlib#comments#Comments()|
     autoload/tlib/dir.vim
@@ -260,6 +262,7 @@ Contents~
         tlib#type#IsDictionary .................. |tlib#type#IsDictionary()|
     autoload/tlib/url.vim
         tlib#url#Decode ......................... |tlib#url#Decode()|
+        tlib#url#DecodeChar ..................... |tlib#url#DecodeChar()|
         tlib#url#EncodeChar ..................... |tlib#url#EncodeChar()|
         tlib#url#Encode ......................... |tlib#url#Encode()|
     autoload/tlib/var.vim
@@ -274,7 +277,7 @@ Contents~
         tlib#win#Width .......................... |tlib#win#Width()|
 
 
-------------------------------------------------------------------------
+========================================================================
 plugin/02tlib.vim~
 
                                                     *:TLet*
@@ -433,7 +436,7 @@ g:tlib_keyagents_InputList_m
 g:tlib_handlers_EditList
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/Object.vim~
 Provides a prototype plus some OO-like methods.
 
@@ -505,7 +508,7 @@ prototype.Super
 prototype.Methods
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/World.vim~
 A prototype used by |tlib#input#List|.
 Inherits from |tlib#Object#New|.
@@ -634,7 +637,7 @@ prototype.SetOrigin
 prototype.RestoreOrigin
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/agent.vim~
 Various agents for use as key handlers in tlib#input#List()
 
@@ -715,6 +718,9 @@ tlib#agent#SelectDown(world, selected)
                                                     *tlib#agent#SelectAll()*
 tlib#agent#SelectAll(world, selected)
 
+                                                    *tlib#agent#ToggleStickyList()*
+tlib#agent#ToggleStickyList(world, selected)
+
                                                     *tlib#agent#EditItem()*
 tlib#agent#EditItem(world, selected)
 
@@ -769,7 +775,7 @@ tlib#agent#GotoLine(world, selected)
 tlib#agent#DoAtLine(world, selected)
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/arg.vim~
 
                                                     *tlib#arg#Get()*
@@ -790,15 +796,17 @@ tlib#arg#Key(dict, list, ?default='')
 tlib#arg#StringAsKeyArgs(string, ?keys=[], ?evaluate=0)
 
                                                     *tlib#arg#Ex()*
-tlib#arg#Ex(arg, ?chars='%# ')
+tlib#arg#Ex(arg, ?chars='%#! ')
     Escape some characters in a string.
+    
+    Use |fnamescape()| if available.
     
     EXAMPLES: >
       exec 'edit '. tlib#arg#Ex('foo%#bar.txt')
 <
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/buffer.vim~
 
                                                     *tlib#buffer#Set()*
@@ -863,7 +871,7 @@ tlib#buffer#InsertText0(text, ...)
 tlib#buffer#CurrentByte()
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/cache.vim~
 
                                                     *tlib#cache#Filename()*
@@ -876,7 +884,7 @@ tlib#cache#Save(cfile, dictionary)
 tlib#cache#Get(cfile)
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/char.vim~
 
                                                     *tlib#char#Get()*
@@ -895,7 +903,7 @@ tlib#char#IsAvailable()
 tlib#char#GetWithTimeout(timeout, ...)
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/cmd.vim~
 
                                                     *tlib#cmd#OutputAsList()*
@@ -911,8 +919,12 @@ tlib#cmd#UseVertical(?rx='')
     an rx is provided check first if the last entry in the history matches 
     this rx.
 
+                                                    *tlib#cmd#Time()*
+tlib#cmd#Time(cmd)
+    Print the time in seconds a command takes.
 
-------------------------------------------------------------------------
+
+========================================================================
 autoload/tlib/comments.vim~
 
                                                     *tlib#comments#Comments()*
@@ -920,7 +932,7 @@ tlib#comments#Comments(...)
     function! tlib#comments#Comments(?rx='')
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/dir.vim~
 
                                                     *tlib#dir#CanonicName()*
@@ -955,14 +967,14 @@ tlib#dir#Push(dir, ?locally=0)
 tlib#dir#Pop()
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/eval.vim~
 
                                                     *tlib#eval#FormatValue()*
 tlib#eval#FormatValue(value, ...)
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/file.vim~
 
                                                     *tlib#file#Split()*
@@ -990,7 +1002,7 @@ tlib#file#Relative(filename, basedir)
 tlib#file#With(fcmd, bcmd, files, ?world={})
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/hook.vim~
 
                                                     *tlib#hook#Run()*
@@ -998,7 +1010,7 @@ tlib#hook#Run(hook, ?dict={})
     Execute dict[hook], w:{hook}, b:{hook}, or g:{hook} if existent.
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/input.vim~
 Input-related, select from a list etc.
 
@@ -1082,7 +1094,7 @@ tlib#input#Edit(name, value, callback, ?cb_args=[])
 <
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/list.vim~
 
                                                     *tlib#list#Inject()*
@@ -1162,7 +1174,7 @@ tlib#list#Zip(lists, ?default='')
 tlib#list#Uniq(list, ...)
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/progressbar.vim~
 
                                                     *tlib#progressbar#Init()*
@@ -1186,7 +1198,7 @@ tlib#progressbar#Display(value, ...)
 tlib#progressbar#Restore()
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/rx.vim~
 
                                                     *tlib#rx#Escape()*
@@ -1195,7 +1207,7 @@ tlib#rx#Escape(text, ?magic='m')
     See :help 'magic'
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/scratch.vim~
 
                                                     *tlib#scratch#UseScratch()*
@@ -1209,7 +1221,7 @@ tlib#scratch#CloseScratch(keyargs, ...)
     Close a scratch buffer as defined in keyargs (usually a World).
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/string.vim~
 
                                                     *tlib#string#RemoveBackslashes()*
@@ -1237,7 +1249,7 @@ tlib#string#TrimRight(string)
 tlib#string#Strip(string)
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/syntax.vim~
 
                                                     *tlib#syntax#Collect()*
@@ -1247,7 +1259,7 @@ tlib#syntax#Collect()
 tlib#syntax#Names(?rx='')
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/tab.vim~
 
                                                     *tlib#tab#BufMap()*
@@ -1262,7 +1274,7 @@ tlib#tab#TabWinNr(buffer)
 tlib#tab#Set(tabnr)
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/tag.vim~
 
                                                     *tlib#tag#Retrieve()*
@@ -1302,7 +1314,7 @@ tlib#tag#Collect(constraints, ?use_extra=1, ?match_front=1)
 tlib#tag#Format(tag)
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/time.vim~
 
                                                     *tlib#time#MSecs()*
@@ -1318,7 +1330,7 @@ tlib#time#Diff(a, b, ...)
 tlib#time#DiffMSecs(a, b, ...)
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/type.vim~
 
                                                     *tlib#type#IsNumber()*
@@ -1337,12 +1349,16 @@ tlib#type#IsList(expr)
 tlib#type#IsDictionary(expr)
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/url.vim~
 
                                                     *tlib#url#Decode()*
 tlib#url#Decode(url)
     Decode an encoded URL.
+
+                                                    *tlib#url#DecodeChar()*
+tlib#url#DecodeChar(char)
+    Decode a single character.
 
                                                     *tlib#url#EncodeChar()*
 tlib#url#EncodeChar(char)
@@ -1353,7 +1369,7 @@ tlib#url#Encode(url, ...)
     Encode an url.
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/var.vim~
 
                                                     *tlib#var#Let()*
@@ -1399,7 +1415,7 @@ tlib#var#List(rx, ?prefix='')
       echo tlib#var#List('tlib_', 'g:')
 
 
-------------------------------------------------------------------------
+========================================================================
 autoload/tlib/win.vim~
 
                                                     *tlib#win#Set()*

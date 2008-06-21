@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2007-11-19.
-" @Revision:    0.1.421
+" @Last Change: 2008-03-08.
+" @Revision:    0.1.431
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -52,6 +52,7 @@ let s:prototype = tlib#Object#New({
             \ 'show_empty': 0,
             \ 'state': 'display', 
             \ 'state_handlers': [],
+            \ 'sticky': 0,
             \ 'timeout': 0,
             \ 'timeout_resolution': 2,
             \ 'type': '', 
@@ -77,15 +78,15 @@ endf
 
 function! s:prototype.Set_highlight_filename() dict "{{{3
     let self.tlib_UseInputListScratch = 'call world.Highlight_filename()'
-    "             \ 'syn match TLibMarker /\%>'. (1 + eval(g:tlib_inputlist_width_filename)) .'c |.\{-}| / | hi def link TLibMarker Special'
-    " let self.tlib_UseInputListScratch .= '| syn match TLibDir /\%>'. (4 + eval(g:tlib_inputlist_width_filename)) .'c\S\{-}[\/].*$/ | hi def link TLibDir Directory'
+    "             \ 'syntax match TLibMarker /\%>'. (1 + eval(g:tlib_inputlist_width_filename)) .'c |.\{-}| / | hi def link TLibMarker Special'
+    " let self.tlib_UseInputListScratch .= '| syntax match TLibDir /\%>'. (4 + eval(g:tlib_inputlist_width_filename)) .'c\S\{-}[\/].*$/ | hi def link TLibDir Directory'
 endf
 
 
 function! s:prototype.Highlight_filename() dict "{{{3
-    " exec 'syn match TLibDir /\%>'. (3 + eval(g:tlib_inputlist_width_filename)) .'c \(\S:\)\?[\/].*$/ contained containedin=TLibMarker'
-    exec 'syn match TLibDir /\(\a:\|\.\.\.\S\{-}\)\?[\/][^&<>*|]*$/ contained containedin=TLibMarker'
-    exec 'syn match TLibMarker /\%>'. (1 + eval(g:tlib_inputlist_width_filename)) .'c |\( \|[[:alnum:]%*+-]*\)| \S.*$/ contains=TLibDir'
+    " exec 'syntax match TLibDir /\%>'. (3 + eval(g:tlib_inputlist_width_filename)) .'c \(\S:\)\?[\/].*$/ contained containedin=TLibMarker'
+    exec 'syntax match TLibDir /\(\a:\|\.\.\..\{-}\)\?[\/][^&<>*|]*$/ contained containedin=TLibMarker'
+    exec 'syntax match TLibMarker /\%>'. (1 + eval(g:tlib_inputlist_width_filename)) .'c |\( \|[[:alnum:]%*+-]*\)| \S.*$/ contains=TLibDir'
     hi def link TLibMarker Special
     hi def link TLibDir Directory
 endf
@@ -104,24 +105,28 @@ function! s:prototype.FormatFilename(file) dict "{{{3
         let dname = '...'. strpart(fnamemodify(a:file, ":h"), len(dname) - dnmax)
     endif
     let marker = []
-    let bnr = bufnr(a:file)
-    " TLogVAR a:file, bnr, self.bufnr
-    if bnr != -1
-        if bnr == self.bufnr
-            call add(marker, '%')
-        elseif buflisted(a:file)
-            if getbufvar(a:file, "&mod")
-                call add(marker, '+')
+    if g:tlib_inputlist_filename_indicators
+        let bnr = bufnr(a:file)
+        " TLogVAR a:file, bnr, self.bufnr
+        if bnr != -1
+            if bnr == self.bufnr
+                call add(marker, '%')
             else
-                call add(marker, 'B')
+                call add(marker, ' ')
+                " elseif buflisted(a:file)
+                "     if getbufvar(a:file, "&mod")
+                "         call add(marker, '+')
+                "     else
+                "         call add(marker, 'B')
+                "     endif
+                " elseif bufloaded(a:file)
+                "     call add(marker, 'h')
+                " else
+                "     call add(marker, 'u')
             endif
-        elseif bufloaded(a:file)
-            call add(marker, 'h')
         else
-            call add(marker, 'u')
+            call add(marker, ' ')
         endif
-    else
-        call add(marker, ' ')
     endif
     call insert(marker, '|')
     call add(marker, '|')
@@ -487,7 +492,7 @@ function! s:prototype.DisplayHelp() dict "{{{3
     let help += [
                 \ '',
                 \ 'Warning:',
-                \ 'Please don''t try to resize the window with the mouse.',
+                \ 'Please don''t resize the window with the mouse.',
                 \ '',
                 \ 'Note on filtering:',
                 \ 'The filter is prepended with "\V". Basically, filtering is case-insensitive.',
@@ -587,7 +592,15 @@ function! s:prototype.DisplayList(query, ...) dict "{{{3
                 exec 'match '. g:tlib_inputlist_higroup .' /\c'. escape(rx0, '/') .'/'
             endif
         endif
-        let &statusline = a:query
+        let query   = a:query
+        let options = []
+        if self.sticky
+            call add(options, 's')
+        endif
+        if !empty(options)
+            let query .= printf(' [%s]', join(options))
+        endif
+        let &statusline = query
     endif
     redraw
 endf

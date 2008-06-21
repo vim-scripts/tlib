@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-07-20.
-" @Last Change: 2007-10-10.
-" @Revision:    0.0.13
+" @Last Change: 2007-11-23.
+" @Revision:    0.0.15
 
 if &cp || exists("loaded_tlib_rx_autoload")
     finish
@@ -21,17 +21,18 @@ function! tlib#rx#Escape(text, ...) "{{{3
         let magic = 'm'
     endif
     if magic ==# 'm'
-        let chars = '^$.*\[]~'
+        return escape(a:text, '^$.*\[]~')
     elseif magic ==# 'M'
         " echoerr 'tlib: Unsupported magic type'
-        let chars = '^$\'
+        return escape(a:text, '^$\')
     elseif magic ==# 'V'
-        let chars = '\'
+        return escape(a:text, '\')
     elseif magic ==# 'v'
-        let chars = '^$.*+\()|{}[]~'
+        " let chars = '^$.*+\()|{}[]~'
+        return substitute(a:text, '[^0-9a-zA-Z_]', '\\&', 'g')
     else
         echoerr 'tlib: Unsupported magic type'
+        return a:text
     endif
-    return escape(a:text, chars)
 endf
 

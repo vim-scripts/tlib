@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-10-02.
-" @Revision:    0.0.48
+" @Last Change: 2008-03-08.
+" @Revision:    0.0.58
 
 if &cp || exists("loaded_tlib_string_autoload")
     finish
@@ -33,32 +33,70 @@ endf
 "     %{rx}      ... insert escaped regexp
 "     %{fuzzyrx} ... insert typo-tolerant regexp
 function! tlib#string#Printf1(format, string) "{{{3
-    let n = len(split(a:format, '%\@<!%s', 1)) - 1
-    let f = a:format
-    if f =~ '%\@<!%{fuzzyrx}'
-        let frx = []
-        for i in range(len(a:string))
-            if i > 0
-                let pb = i - 1
-            else
-                let pb = 0
-            endif
-            let slice = tlib#rx#Escape(a:string[pb : i + 1])
-            call add(frx, '['. slice .']')
-            call add(frx, '.\?')
-        endfor
-        let f = s:RewriteFormatString(f, '%{fuzzyrx}', join(frx, ''))
-    endif
-    if f =~ '%\@<!%{rx}'
-        let f = s:RewriteFormatString(f, '%{rx}', tlib#rx#Escape(a:string))
-    endif
-    if n == 0
-        return substitute(f, '%%', '%', 'g')
+    let s = split(a:format, '%.\zs')
+    " TLogVAR s
+    return join(map(s, 's:PrintFormat(v:val, a:string)'), '')
+endf
+
+function! s:PrintFormat(format, string) "{{{3
+    let cut = match(a:format, '%\({.\{-}}\|.\)$')
+    if cut == -1
+        return a:format
     else
-        let a = repeat([a:string], n)
-        return call('printf', insert(a, f))
+        let head = cut > 0 ? a:format[0 : cut - 1] : ''
+        let tail = a:format[cut : -1]
+        " TLogVAR head, tail
+        if tail == '%{fuzzyrx}'
+            let frx = []
+            for i in range(len(a:string))
+                if i > 0
+                    let pb = i - 1
+                else
+                    let pb = 0
+                endif
+                let slice = tlib#rx#Escape(a:string[pb : i + 1])
+                call add(frx, '['. slice .']')
+                call add(frx, '.\?')
+            endfor
+            let tail = join(frx, '')
+        elseif tail == '%{rx}'
+            let tail = tlib#rx#Escape(a:string)
+        elseif tail == '%%'
+            let tail = '%'
+        elseif tail == '%s'
+            let tail = a:string
+        endif
+        " TLogVAR tail
+        return head . tail
     endif
 endf
+" function! tlib#string#Printf1(format, string) "{{{3
+"     let n = len(split(a:format, '%\@<!%s', 1)) - 1
+"     let f = a:format
+"     if f =~ '%\@<!%{fuzzyrx}'
+"         let frx = []
+"         for i in range(len(a:string))
+"             if i > 0
+"                 let pb = i - 1
+"             else
+"                 let pb = 0
+"             endif
+"             let slice = tlib#rx#Escape(a:string[pb : i + 1])
+"             call add(frx, '['. slice .']')
+"             call add(frx, '.\?')
+"         endfor
+"         let f = s:RewriteFormatString(f, '%{fuzzyrx}', join(frx, ''))
+"     endif
+"     if f =~ '%\@<!%{rx}'
+"         let f = s:RewriteFormatString(f, '%{rx}', tlib#rx#Escape(a:string))
+"     endif
+"     if n == 0
+"         return substitute(f, '%%', '%', 'g')
+"     else
+"         let a = repeat([a:string], n)
+"         return call('printf', insert(a, f))
+"     endif
+" endf
 
 
 function! s:RewriteFormatString(format, pattern, string) "{{{3

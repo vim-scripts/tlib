@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-10-04.
-" @Revision:    0.0.45
+" @Last Change: 2008-06-15.
+" @Revision:    0.0.49
 
 if &cp || exists("loaded_tlib_arg_autoload")
     finish
@@ -79,18 +79,24 @@ endf
 
 """ Command line {{{1
 
-" :def: function! tlib#arg#Ex(arg, ?chars='%# ')
+" :def: function! tlib#arg#Ex(arg, ?chars='%#! ')
 " Escape some characters in a string.
+"
+" Use |fnamescape()| if available.
 "
 " EXAMPLES: >
 "   exec 'edit '. tlib#arg#Ex('foo%#bar.txt')
 function! tlib#arg#Ex(arg, ...) "{{{3
-    " let chars = '%# \'
-    let chars = '%# '
-    if a:0 >= 1
-        let chars .= a:1
+    if exists('*fnameescape') && a:0 == 0
+        return fnameescape(a:arg)
+    else
+        " let chars = '%# \'
+        let chars = '%#! '
+        if a:0 >= 1
+            let chars .= a:1
+        endif
+        return escape(a:arg, chars)
     endif
-    return escape(a:arg, chars)
 endf
 
 

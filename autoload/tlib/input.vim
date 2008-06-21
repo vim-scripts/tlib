@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-11-14.
-" @Revision:    0.0.437
+" @Last Change: 2008-03-08.
+" @Revision:    0.0.449
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -113,6 +113,7 @@ function! tlib#input#ListW(world, ...) "{{{3
     TVarArg 'cmd'
     let world = a:world
     if cmd =~ '^resume'
+        call world.UseInputListScratch()
         let world.initial_index = line('.')
         call world.Retrieve(1)
     elseif !world.initialized
@@ -425,11 +426,18 @@ function! tlib#input#ListW(world, ...) "{{{3
         silent! let @/          = lastsearch
         " TLogDBG 'finally 2'
         if world.state !~ '\<suspend\>'
-            " TLogVAR world.state, world.win_wnr, world.bufnr
-            call world.CloseScratch()
-            call world.SwitchWindow('win')
-            " TLogVAR world.winview
-            call tlib#win#SetLayout(world.winview)
+            if world.sticky
+                if bufwinnr(world.bufnr) == -1
+                    call world.UseScratch()
+                endif
+                let world = tlib#agent#SuspendToParentWindow(world, world.GetSelectedItems(world.rv))
+            else
+                " TLogVAR world.state, world.win_wnr, world.bufnr
+                call world.CloseScratch()
+                call world.SwitchWindow('win')
+                " TLogVAR world.winview
+                call tlib#win#SetLayout(world.winview)
+            endif
         endif
         " for i in range(0,5)
         "     call getchar(0)

@@ -3,13 +3,52 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-11-16.
-" @Revision:    0.0.238
+" @Last Change: 2008-08-19.
+" @Revision:    0.0.252
 
 if &cp || exists("loaded_tlib_buffer_autoload")
     finish
 endif
 let loaded_tlib_buffer_autoload = 1
+
+let s:bmru = []
+
+
+function! tlib#buffer#EnableMRU() "{{{3
+    call tlib#autocmdgroup#Init()
+    autocmd TLib BufEnter * call s:BMRU_Push(bufnr('%'))
+endf
+
+
+function! tlib#buffer#DisableMRU() "{{{3
+    autocmd! TLib BufEnter
+endf
+
+
+function! s:BMRU_Push(bnr) "{{{3
+    let i = index(s:bmru, a:bnr)
+    if i >= 0
+        call remove(s:bmru, i)
+    endif
+    call insert(s:bmru, a:bnr)
+endf
+
+
+function! s:CompareBufferNrByMRU(a, b) "{{{3
+    let an = matchstr(a:a, '\s*\zs\d\+\ze')
+    let bn = matchstr(a:b, '\s*\zs\d\+\ze')
+    let ai = index(s:bmru, 0 + an)
+    if ai == -1
+        return 1
+    else
+        let bi = index(s:bmru, 0 + bn)
+        if bi == -1
+            return -1
+        else
+            return ai == bi ? 0 : ai > bi ? 1 : -1
+        endif
+    endif
+endf
 
 
 " Set the buffer to buffer and return a command as string that can be 
@@ -82,14 +121,22 @@ function! tlib#buffer#Eval(buffer, code) "{{{3
 endf
 
 
-" :def: function! tlib#buffer#GetList(?show_hidden=0, ?show_number=0)
+" :def: function! tlib#buffer#GetList(?show_hidden=0, ?show_number=0, " ?order='bufnr')
 function! tlib#buffer#GetList(...)
-    TVarArg ['show_hidden', 0], ['show_number', 0]
+    TVarArg ['show_hidden', 0], ['show_number', 0], ['order', '']
     let ls_bang = show_hidden ? '!' : ''
     redir => bfs
     exec 'silent ls'. ls_bang
     redir END
     let buffer_list = split(bfs, '\n')
+    if order == 'mru'
+        if empty(s:bmru)
+            call tlib#buffer#EnableMRU()
+            echom 'tlib: Installed Buffer MRU logger; disable with: call tlib#buffer#DisableMRU()'
+        else
+            call sort(buffer_list, function('s:CompareBufferNrByMRU'))
+        endif
+    endif
     let buffer_nr = map(copy(buffer_list), 'matchstr(v:val, ''\s*\zs\d\+\ze'')')
     " TLogVAR buffer_list
     if show_number

@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-03-08.
-" @Revision:    0.0.58
+" @Last Change: 2008-08-19.
+" @Revision:    0.0.71
 
 if &cp || exists("loaded_tlib_string_autoload")
     finish
@@ -25,6 +25,30 @@ endf
 
 function! tlib#string#Chomp(string) "{{{3
     return substitute(a:string, '[[:cntrl:][:space:]]*$', '', '')
+endf
+
+
+function! tlib#string#Format(template, dict) "{{{3
+    let parts = split(a:template, '\ze%\({.\{-}}\|.\)')
+    let out = []
+    for part in parts
+        let ml   = matchlist(part, '^%\({\(.\{-}\)}\|\(.\)\)\(.*\)$')
+        if empty(ml)
+            let rest = part
+        else
+            let var  = empty(ml[2]) ? ml[3] : ml[2]
+            let rest = ml[4]
+            if has_key(a:dict, var)
+                call add(out, a:dict[var])
+            elseif var == '%%'
+                call add(out, '%')
+            else
+                call add(out, ml[1])
+            endif
+        endif
+        call add(out, rest)
+    endfor
+    return join(out, '')
 endf
 
 

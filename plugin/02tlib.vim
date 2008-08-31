@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2008-06-15.
-" @Revision:    460
+" @Last Change: 2008-08-19.
+" @Revision:    463
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
@@ -26,7 +26,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 23
+let loaded_tlib = 24
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -246,11 +246,6 @@ TLet g:tlib_handlers_EditList = [
             \ ]
 
 
-augroup TLib
-    autocmd!
-augroup END
-
-
 let &cpo = s:save_cpo
 unlet s:save_cpo
 
@@ -448,4 +443,8 @@ FIX:
 - tlib#agent#ToggleStickyList()
 - Simplified tlib#url#Decode()
 - tlib#arg#Ex(): use fnameescape() if available
+
+0.24
+- s:prototype.SetInitialFilter: accept list as argument
+- Maintain buffer MRU if required
 

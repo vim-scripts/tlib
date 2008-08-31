@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-07-18.
-" @Last Change: 2007-11-01.
-" @Revision:    0.0.119
+" @Last Change: 2008-08-30.
+" @Revision:    0.0.120
 
 if &cp || exists("loaded_tlib_scratch_autoload")
     finish
@@ -80,17 +80,22 @@ function! tlib#scratch#CloseScratch(keyargs, ...) "{{{3
     if !empty(scratch)
         let wn = bufwinnr(scratch)
         " TLogVAR wn
-        if wn != -1
-            " TLogDBG winnr()
-            let wb = tlib#win#Set(wn)
-            wincmd c
-            " exec wb 
-            " redraw
-            " TLogDBG winnr()
-        endif
-        if reset_scratch
-            let a:keyargs.scratch = ''
-        endif
+        try
+            if wn != -1
+                " TLogDBG winnr()
+                let wb = tlib#win#Set(wn)
+                wincmd c
+                " exec wb 
+                " redraw
+                " TLogDBG winnr()
+                return 1
+            endif
+        finally
+            if reset_scratch
+                let a:keyargs.scratch = ''
+            endif
+        endtry
     endif
+    return 0
 endf
 

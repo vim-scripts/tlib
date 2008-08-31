@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-03-08.
-" @Revision:    0.0.449
+" @Last Change: 2008-08-30.
+" @Revision:    0.0.457
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -433,10 +433,11 @@ function! tlib#input#ListW(world, ...) "{{{3
                 let world = tlib#agent#SuspendToParentWindow(world, world.GetSelectedItems(world.rv))
             else
                 " TLogVAR world.state, world.win_wnr, world.bufnr
-                call world.CloseScratch()
-                call world.SwitchWindow('win')
-                " TLogVAR world.winview
-                call tlib#win#SetLayout(world.winview)
+                if world.CloseScratch()
+                    call world.SwitchWindow('win')
+                    " TLogVAR world.winview
+                    call tlib#win#SetLayout(world.winview)
+                endif
             endif
         endif
         " for i in range(0,5)
@@ -608,7 +609,12 @@ function! tlib#input#Edit(name, value, callback, ...) "{{{3
     syntax match TlibEditComment /^```.*/
     hi link TlibEditComment Comment
     exec len(hd) + 1
-    let b:tlib_scratch_edit_callback = a:callback
+    if type(a:callback) == 4
+        let b:tlib_scratch_edit_callback = get(a:callback, 'submit', '')
+        call call(get(a:callback, 'init', ''), [])
+    else
+        let b:tlib_scratch_edit_callback = a:callback
+    endif
     let b:tlib_scratch_edit_args     = args
     let b:tlib_scratch_edit_scratch  = sargs
     " exec 'autocmd BufDelete,BufHidden,BufUnload <buffer> call s:EditCallback('. string(a:name) .')'

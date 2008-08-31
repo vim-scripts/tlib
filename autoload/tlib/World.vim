@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2008-03-08.
-" @Revision:    0.1.431
+" @Last Change: 2008-08-20.
+" @Revision:    0.1.441
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -355,7 +355,11 @@ endf
 
 function! s:prototype.SetInitialFilter(filter) dict "{{{3
     " let self.initial_filter = [[''], [a:filter]]
-    let self.initial_filter = [[a:filter]]
+    if type(a:filter) == 3
+        let self.initial_filter = copy(a:filter)
+    else
+        let self.initial_filter = [[a:filter]]
+    endif
 endf
 
 
@@ -675,6 +679,7 @@ function! s:prototype.SetOrigin(...) dict "{{{3
     if winview
         let self.winview = tlib#win#GetLayout()
     endif
+    " TLogVAR self.win_wnr, self.bufnr, self.winview
     return self
 endf
 

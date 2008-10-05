@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-08-19.
-" @Revision:    0.0.71
+" @Last Change: 2008-10-03.
+" @Revision:    0.0.95
 
 if &cp || exists("loaded_tlib_string_autoload")
     finish
@@ -142,4 +142,5 @@ endf
 function! tlib#string#Strip(string) "{{{3
     return tlib#string#TrimRight(tlib#string#TrimLeft(a:string))
 endf
+
 

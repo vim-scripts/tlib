@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-24.
-" @Last Change: 2008-03-08.
-" @Revision:    0.1.140
+" @Last Change: 2008-10-03.
+" @Revision:    0.1.142
 
 if &cp || exists("loaded_tlib_agent_autoload") "{{{2
     finish
@@ -353,6 +353,7 @@ endf
 
 function! tlib#agent#ViewFile(world, selected) "{{{3
     let back = a:world.SwitchWindow('win')
+    " TLogVAR back
     call tlib#file#With('edit', 'buffer', a:selected, a:world)
     exec back
     let a:world.state = 'display'

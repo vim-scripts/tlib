@@ -3,13 +3,15 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2008-08-19.
-" @Revision:    463
+" @Last Change: 2008-10-04.
+" @Revision:    470
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
 "
 " TODO:
+" - List isn't updated on some occassions (eg tselectfiles + pick file 
+"   per mouse) when resetting the state from an post-process agent
 " - tlib#agent#SwitchLayout(): switch between horizontal and vertical 
 "   layout for the list
 " - tlib#cache#Purge(): delete old cache files (for the moment use find)
@@ -26,7 +28,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 24
+let loaded_tlib = 25
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -447,4 +449,11 @@ FIX:
 0.24
 - s:prototype.SetInitialFilter: accept list as argument
 - Maintain buffer MRU if required
+
+0.25
+- NEW: tlib#notify#TrimMessage(): trim message to prevent "Press ENTER" 
+messages (contributed by Erik Falor)
+- NEW: tlib#notify#Echo()
+- FIX: World.CloseScratch(): Set window
+- FIX: tlib#input#ListW(): Set initial_display = 1 on reset
 

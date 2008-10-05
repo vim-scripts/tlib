@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-08-24.
-" @Last Change: 2007-09-12.
-" @Revision:    0.0.35
+" @Last Change: 2008-10-03.
+" @Revision:    0.0.40
 
 if &cp || exists("loaded_tlib_win_autoload")
     finish
@@ -15,10 +15,12 @@ let loaded_tlib_win_autoload = 1
 " Return vim code to jump back to the original window.
 function! tlib#win#Set(winnr) "{{{3
     if a:winnr > 0
+        " TLogVAR a:winnr
         " TLogDBG winnr()
         if winnr() != a:winnr && winbufnr(a:winnr) != -1
             let rv = winnr().'wincmd w'
             exec a:winnr .'wincmd w'
+            " TLogVAR rv
             return rv
         endif
     endif
@@ -44,9 +46,11 @@ endf
 
 function! tlib#win#SetLayout(layout) "{{{3
     if a:layout.winnr == winnr('$')
+        " TLogVAR a:layout.winrestcmd
         exec a:layout.winrestcmd
         if !empty(a:layout.views)
             let winnr = winnr()
+            " TLogVAR winnr
             for [w, v] in items(a:layout.views)
                 call tlib#win#Set(w)
                 call winrestview(v)

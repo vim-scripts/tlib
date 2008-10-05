@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-07-18.
-" @Last Change: 2008-08-30.
-" @Revision:    0.0.120
+" @Last Change: 2008-10-03.
+" @Revision:    0.0.122
 
 if &cp || exists("loaded_tlib_scratch_autoload")
     finish
@@ -54,19 +54,19 @@ function! tlib#scratch#UseScratch(...) "{{{3
             silent exec cmd . escape(id, '%#\ ')
             " silent exec 'split '. id
         endif
-        setlocal buftype=nofile
-        setlocal bufhidden=hide
-        setlocal noswapfile
-        setlocal nobuflisted
-        setlocal modifiable
-        setlocal foldmethod=manual
-        setlocal foldcolumn=0
         let ft = get(keyargs, 'scratch_filetype', '')
         " TLogVAR ft
         " if !empty(ft)
-            let &ft=ft
+        let &ft=ft
         " end
     endif
+    setlocal buftype=nofile
+    setlocal bufhidden=hide
+    setlocal noswapfile
+    setlocal nobuflisted
+    setlocal modifiable
+    setlocal foldmethod=manual
+    setlocal foldcolumn=0
     let keyargs.scratch = bufnr('%')
     return keyargs.scratch
 endf

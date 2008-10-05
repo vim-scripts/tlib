@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2008-08-20.
-" @Revision:    0.1.441
+" @Last Change: 2008-10-04.
+" @Revision:    0.1.471
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -30,6 +30,7 @@ let s:prototype = tlib#Object#New({
             \ 'index_table': [],
             \ 'initial_filter': [['']],
             \ 'initial_index': 1,
+            \ 'initial_display': 1,
             \ 'initialized': 0,
             \ 'key_handlers': [],
             \ 'list': [],
@@ -249,11 +250,15 @@ endf
 
 function! s:prototype.GetCurrentItem() dict "{{{3
     let idx = self.prefidx
+    " TLogVAR idx
     if stridx(self.type, 'i') != -1
         return idx
     elseif !empty(self.list)
         if len(self.list) >= idx
-            return self.list[idx - 1]
+            let idx1 = idx - 1
+            let rv = self.list[idx - 1]
+            " TLogVAR idx, idx1, rv, self.list
+            return rv
         endif
     else
         return ''
@@ -398,7 +403,11 @@ function! s:prototype.CloseScratch(...) dict "{{{3
     TVarArg ['reset_scratch', 0]
     " TVarArg ['reset_scratch', 1]
     " TLogVAR reset_scratch
-    return tlib#scratch#CloseScratch(self, reset_scratch)
+    let rv = tlib#scratch#CloseScratch(self, reset_scratch)
+    if rv
+        call self.SwitchWindow('win')
+    endif
+    return rv
 endf
 
 
@@ -430,6 +439,7 @@ function! s:prototype.Reset(...) dict "{{{3
     let self.filter    = deepcopy(self.initial_filter)
     let self.idx       = ''
     let self.prefidx   = 0
+    let self.initial_display = 1
     call self.UseInputListScratch()
     call self.ResetSelected()
     call self.Retrieve(!initial)
@@ -531,6 +541,7 @@ function! s:prototype.DisplayList(query, ...) dict "{{{3
     " TLogVAR a:query
     " TLogVAR self.state
     let list = a:0 >= 1 ? a:1 : []
+    " TLogDBG 'len(list) = '. len(list)
     call self.UseScratch()
     " TLogVAR self.scratch
     " TAssert IsNotEmpty(self.scratch)
@@ -652,7 +663,7 @@ endf
 
 function! s:prototype.SwitchWindow(where) dict "{{{3
     let wnr = get(self, a:where.'_wnr')
-    " TLogVAR wnr
+    " TLogVAR self, wnr
     return tlib#win#Set(wnr)
 endf
 
@@ -673,6 +684,10 @@ endf
 
 function! s:prototype.SetOrigin(...) dict "{{{3
     TVarArg ['winview', 0]
+    " TLogVAR self.win_wnr, self.bufnr
+    " TLogDBG bufname('%')
+    " TLogDBG winnr()
+    " TLogDBG winnr('$')
     let self.win_wnr = winnr()
     let self.bufnr   = bufnr('%')
     let self.cursor  = getpos('.')

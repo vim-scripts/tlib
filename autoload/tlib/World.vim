@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2008-10-04.
-" @Revision:    0.1.471
+" @Last Change: 2008-10-16.
+" @Revision:    0.1.518
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -26,6 +26,7 @@ let s:prototype = tlib#Object#New({
             \ 'display_format': '',
             \ 'filter': [['']],
             \ 'filter_format': '',
+            \ 'filter_options': '\c',
             \ 'follow_cursor': '',
             \ 'index_table': [],
             \ 'initial_filter': [['']],
@@ -34,6 +35,7 @@ let s:prototype = tlib#Object#New({
             \ 'initialized': 0,
             \ 'key_handlers': [],
             \ 'list': [],
+            \ 'match_mode': 'strings',
             \ 'next_state': '',
             \ 'numeric_chars': tlib#var#Get('tlib_numeric_chars', 'bg'),
             \ 'offset': 1,
@@ -210,6 +212,12 @@ function! s:prototype.GetRx0(...) dict "{{{3
 endf
 
 
+function! s:prototype.FormatName(format, value) dict "{{{3
+    let world = self
+    return eval(call(function("printf"), self.FormatArgs(a:format, a:value)))
+endf
+
+
 function! s:prototype.GetItem(idx) dict "{{{3
     return self.list[a:idx - 1]
 endf
@@ -283,7 +291,7 @@ endf
 
 function! s:prototype.SetFilter() dict "{{{3
     " let mrx = '\V'. (a:0 >= 1 && a:1 ? '\C' : '')
-    let mrx = '\V'. self.filter_format
+    let mrx = '\V'. self.filter_options
     let self.filter_pos = []
     let self.filter_neg = []
     for filter in self.filter
@@ -301,13 +309,39 @@ function! s:prototype.SetFilter() dict "{{{3
 endf
 
 
+function! s:prototype.IsValidFilter() dict "{{{3
+    let last = '\V\('. self.filter[0][0] .'\)'
+    " TLogVAR last
+    try
+        let a = match("", last)
+        return 1
+    catch
+        return 0
+    endtry
+endf
+
+
+function! s:prototype.SetMatchMode() dict "{{{3
+    let match_mode = tlib#var#Get('tlib_inputlist_match', 'bg')
+    if !empty(match_mode)
+        if index(['strings', 'chars'], match_mode) != -1
+            let self.match_mode = match_mode
+        else
+            throw 'tlib: Unknown mode for tlib_inputlist_match: '. match_mode
+        endif
+    endif
+endf
+
+
 function! s:prototype.Match(text, ...) dict "{{{3
     for rx in self.filter_neg
+        " TLogVAR rx
         if a:text =~ rx
             return 0
         endif
     endfor
     for rx in self.filter_pos
+        " TLogVAR rx
         if a:text !~ rx
             return 0
         endif
@@ -334,8 +368,9 @@ endf
 function! s:prototype.MatchBaseIdx(idx) dict "{{{3
     let text = self.GetBaseItem(a:idx)
     if !empty(self.filter_format)
-        let text = eval(call(function("printf"), self.FormatArgs(self.filter_format, text)))
+        let text = self.FormatName(self.filter_format, text)
     endif
+    " TLogVAR text
     return self.Match(text)
 endf
 
@@ -388,9 +423,16 @@ endf
 
 function! s:prototype.DisplayFilter() dict "{{{3
     " TLogVAR self.filter
-    let filter1 = map(deepcopy(self.filter), '"(". join(reverse(v:val), " OR ") .")"')
+    let filter1 = deepcopy(self.filter)
+    call filter(filter1, 'v:val != [""]')
     " TLogVAR filter1
-    return join(reverse(filter1), ' AND ')
+    if self.match_mode == 'strings'
+        call map(filter1, '"(". join(reverse(v:val), " OR ") .")"')
+        return join(reverse(filter1), ' AND ')
+    elseif self.match_mode == 'chars'
+        call map(filter1, 'v:val[0]')
+        return '['. join(reverse(filter1), '') .']'
+    end
 endf
 
 
@@ -515,9 +557,12 @@ function! s:prototype.DisplayHelp() dict "{{{3
                 \ '',
                 \ 'Press any key to continue.',
                 \ ]
-    norm! ggdG
+    " call tlib#normal#WithRegister('gg"tdG', 't')
+    call tlib#buffer#DeleteRange('1', '$')
     call append(0, help)
-    norm! Gddgg
+    " call tlib#normal#WithRegister('G"tddgg', 't')
+    call tlib#buffer#DeleteRange('$', '$')
+    1
     call self.Resize(len(help), 0)
 endf
 
@@ -562,14 +607,14 @@ function! s:prototype.DisplayList(query, ...) dict "{{{3
             let resize = min([resize, (&lines * g:tlib_inputlist_pct / 100)])
             " TLogVAR resize, ll, &lines
             call self.Resize(resize, get(self, 'resize_vertical', 0))
-            norm! ggdG
+            call tlib#normal#WithRegister('gg"tdG', 't')
             let w = winwidth(0) - &fdc
             " let w = winwidth(0) - &fdc - 1
             let lines = copy(list)
             let lines = map(lines, 'printf("%-'. w .'.'. w .'s", substitute(v:val, ''[[:cntrl:][:space:]]'', " ", "g"))')
             " TLogVAR lines
             call append(0, lines)
-            norm! Gddgg
+            call tlib#normal#WithRegister('G"tddgg', 't')
         endif
         " TLogVAR self.prefidx
         let base_pref = self.GetBaseIdx(self.prefidx)
@@ -603,7 +648,7 @@ function! s:prototype.DisplayList(query, ...) dict "{{{3
         if !empty(g:tlib_inputlist_higroup)
             if empty(rx0)
                 match none
-            else
+            elseif self.IsValidFilter()
                 exec 'match '. g:tlib_inputlist_higroup .' /\c'. escape(rx0, '/') .'/'
             endif
         endif

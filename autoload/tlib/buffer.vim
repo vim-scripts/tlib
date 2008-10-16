@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-08-19.
-" @Revision:    0.0.252
+" @Last Change: 2008-10-06.
+" @Revision:    0.0.255
 
 if &cp || exists("loaded_tlib_buffer_autoload")
     finish
@@ -183,7 +183,12 @@ endf
 
 " Delete the lines in the current buffer. Wrapper for |:delete|.
 function! tlib#buffer#DeleteRange(line1, line2) "{{{3
-    exec a:line1.','.a:line2.'delete'
+    let r = @t
+    try
+        exec a:line1.','.a:line2.'delete t'
+    finally
+        let @t = r
+    endtry
 endf
 
 
@@ -282,7 +287,7 @@ function! tlib#buffer#InsertText(text, ...) "{{{3
         " TLogVAR text
     endif
     " exec 'norm! '. lineno .'Gdd'
-    norm! dd
+    call tlib#normal#WithRegister('"tdd', 't')
     call append(lineno - 1, text)
     let tlen = len(text)
     let posshift = matchstr(pos, '\d\+')

@@ -42,6 +42,7 @@ Contents~
         g:tlib_inputlist_higroup ................ |g:tlib_inputlist_higroup|
         g:tlib_inputlist_livesearch_threshold ... |g:tlib_inputlist_livesearch_threshold|
         g:tlib_inputlist_filename_indicators .... |g:tlib_inputlist_filename_indicators|
+        g:tlib_inputlist_match .................. |g:tlib_inputlist_match|
         g:tlib_tags_extra ....................... |g:tlib_tags_extra|
         g:tlib_tag_substitute ................... |g:tlib_tag_substitute|
         g:tlib_filename_sep ..................... |g:tlib_filename_sep|
@@ -76,6 +77,7 @@ Contents~
         prototype.FormatArgs
         prototype.GetRx
         prototype.GetRx0
+        prototype.FormatName
         prototype.GetItem
         prototype.GetListIdx
         prototype.GetBaseIdx
@@ -84,6 +86,8 @@ Contents~
         prototype.GetCurrentItem
         prototype.CurrentItem
         prototype.SetFilter
+        prototype.IsValidFilter
+        prototype.SetMatchMode
         prototype.Match
         prototype.MatchBaseIdx
         prototype.BuildTable
@@ -232,6 +236,8 @@ Contents~
         tlib#list#RemoveAll ..................... |tlib#list#RemoveAll()|
         tlib#list#Zip ........................... |tlib#list#Zip()|
         tlib#list#Uniq .......................... |tlib#list#Uniq()|
+    autoload/tlib/normal.vim
+        tlib#normal#WithRegister ................ |tlib#normal#WithRegister()|
     autoload/tlib/notify.vim
         tlib#notify#Echo ........................ |tlib#notify#Echo()|
         tlib#notify#TrimMessage ................. |tlib#notify#TrimMessage()|
@@ -391,6 +397,12 @@ g:tlib_inputlist_filename_indicators (default: 0)
     buflisted(), bufloaded() etc.).
     This is disabled by default because vim checks also for the file on 
     disk when doing this.
+
+                                                    *g:tlib_inputlist_match*
+g:tlib_inputlist_match         (default: 'strings')
+    Can be "strings" or "chars".
+      strings :: substrings
+      chars   :: match characters
 
                                                     *g:tlib_tags_extra*
 g:tlib_tags_extra              (default: '')
@@ -558,6 +570,9 @@ prototype.GetRx
 prototype.GetRx0
 
 
+prototype.FormatName
+
+
 prototype.GetItem
 
 
@@ -580,6 +595,12 @@ prototype.CurrentItem
 
 
 prototype.SetFilter
+
+
+prototype.IsValidFilter
+
+
+prototype.SetMatchMode
 
 
 prototype.Match
@@ -1218,6 +1239,13 @@ tlib#list#Zip(lists, ?default='')
 
                                                     *tlib#list#Uniq()*
 tlib#list#Uniq(list, ...)
+
+
+========================================================================
+autoload/tlib/normal.vim~
+
+                                                    *tlib#normal#WithRegister()*
+tlib#normal#WithRegister(cmd, ...)
 
 
 ========================================================================

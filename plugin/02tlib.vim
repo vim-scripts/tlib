@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2008-10-04.
-" @Revision:    470
+" @Last Change: 2008-10-16.
+" @Revision:    478
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
@@ -28,7 +28,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 25
+let loaded_tlib = 26
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -125,6 +125,11 @@ TLet g:tlib_inputlist_livesearch_threshold = 500
 " This is disabled by default because vim checks also for the file on 
 " disk when doing this.
 TLet g:tlib_inputlist_filename_indicators = 0
+
+" Can be "strings" or "chars".
+"   strings :: substrings
+"   chars   :: match characters
+TLet g:tlib_inputlist_match = 'strings'
 
 " Extra tags for |tlib#tag#Retrieve()| (see there). Can also be buffer-local.
 TLet g:tlib_tags_extra = ''
@@ -456,4 +461,13 @@ messages (contributed by Erik Falor)
 - NEW: tlib#notify#Echo()
 - FIX: World.CloseScratch(): Set window
 - FIX: tlib#input#ListW(): Set initial_display = 1 on reset
+
+0.26
+- NEW: tlib#normal#WithRegister()
+- FIX: Try not to change numbered registers
+
+0.27
+- FIX: Cosmetic bug, wrong packaging (thanks Nathan Neff)
+- Meaning of World#filter_format changed; new World#filter_options 
+- Filtering didn't work as advertised
 

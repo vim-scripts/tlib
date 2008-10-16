@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-10-04.
-" @Revision:    0.0.503
+" @Last Change: 2008-10-16.
+" @Revision:    0.0.534
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -130,6 +130,7 @@ function! tlib#input#ListW(world, ...) "{{{3
     let @/ = ''
     let &laststatus = 2
     let world.initial_display = 1
+    call world.SetMatchMode()
 
     try
         while !empty(world.state) && world.state !~ '^exit' && (world.show_empty || !empty(world.base))
@@ -173,8 +174,77 @@ function! tlib#input#ListW(world, ...) "{{{3
                 endif
                 " TLogVAR world.filter
                 if world.state =~ 'display'
-                    if world.state =~ '^display'
-                        let dlist = s:GetDList(world)
+                    if world.IsValidFilter() && world.state =~ '^display'
+
+                        call world.BuildTable()
+                        " TLogDBG 2
+                        " TLogDBG len(world.table)
+                        " TLogVAR world.table
+                        let world.list  = map(copy(world.table), 'world.GetBaseItem(v:val)')
+                        " TLogDBG 3
+                        let world.llen = len(world.list)
+                        " TLogVAR world.index_table
+                        if empty(world.index_table)
+                            let dindex = range(1, world.llen)
+                            let world.index_width = len(world.llen)
+                        else
+                            let dindex = world.index_table
+                            let world.index_width = len(max(dindex))
+                        endif
+                        if world.llen == 0 && !world.show_empty
+                            call world.ReduceFilter()
+                            let world.offset = 1
+                            " TLogDBG 'ReduceFilter'
+                            continue
+                        else
+                            if world.llen == 1
+                                let world.last_item = world.list[0]
+                                if world.pick_last_item
+                                    echom 'Pick last item: '. world.list[0]
+                                    let world.prefidx = '1'
+                                    " TLogDBG 'pick last item'
+                                    throw 'pick'
+                                endif
+                            else
+                                let world.last_item = ''
+                            endif
+                        endif
+                        " TLogDBG 4
+                        " TLogVAR world.idx, world.llen, world.state
+                        " TLogDBG world.FilterIsEmpty()
+                        if world.state == 'display'
+                            if world.idx == '' && world.llen < g:tlib_sortprefs_threshold && !world.FilterIsEmpty()
+                                let s:world = world
+                                let pref    = sort(range(1, world.llen), 's:SortPrefs')
+                                let world.prefidx = get(pref, 0, world.initial_index)
+                            else
+                                let world.prefidx = world.idx == '' ? world.initial_index : world.idx
+                            endif
+                            if world.prefidx > world.llen
+                                let world.prefidx = world.llen
+                            elseif world.prefidx < 1
+                                let world.prefidx = 1
+                            endif
+                        endif
+                        " TLogVAR world.initial_index, world.prefidx
+                        " TLogDBG 5
+                        " TLogDBG len(world.list)
+                        " TLogVAR world.list
+                        let dlist = copy(world.list)
+                        if !empty(world.display_format)
+                            let display_format = world.display_format
+                            " TLogVAR display_format
+                            call map(dlist, 'world.FormatName(display_format, v:val)')
+                        endif
+                        " TLogVAR world.prefidx
+                        " TLogDBG 6
+                        if world.offset_horizontal > 0
+                            call map(dlist, 'v:val[world.offset_horizontal:-1]')
+                        endif
+                        " TLogVAR dindex
+                        let dlist = map(range(0, world.llen - 1), 'printf("%0'. world.index_width .'d", dindex[v:val]) .": ". dlist[v:val]')
+                        " TLogVAR dlist
+
                     endif
                     " TLogDBG 7
                     " TLogVAR world.prefidx, world.offset
@@ -238,6 +308,8 @@ function! tlib#input#ListW(world, ...) "{{{3
                     " continue
                 elseif c == 13
                     throw 'pick'
+                elseif c == 27
+                    let world.state = 'exit empty'
                 elseif c == "\<LeftMouse>"
                     let line = getline(v:mouse_lnum)
                     let world.prefidx = substitute(matchstr(line, '^\d\+\ze[*:]'), '^0\+', '', '')
@@ -265,12 +337,30 @@ function! tlib#input#ListW(world, ...) "{{{3
                         let world.idx = ''
                         " TLogVAR world.filter
                         if world.llen > g:tlib_inputlist_livesearch_threshold
-                            let world.filter[0][0] = input('Filter: ', world.filter[0][0] . nr2char(c))
-                            echo
+                            let pattern = input('Filter: ', world.filter[0][0] . nr2char(c))
+                            if empty(pattern)
+                                let world.state = 'exit empty'
+                            else
+                                if world.match_mode == 'strings'
+                                    let world.filter[0] = split(pattern, '\s*|\s*') + world.filter[0][1 : -1]
+                                elseif world.match_mode == 'chars'
+                                    let world.filter = map(split(pattern, '\zs'), '[v:val]') + world.filter[1 : -1]
+                                endif
+                                echo
+                            endif
+                        elseif c == 124
+                            call insert(world.filter[0], [])
                         else
-                            let world.filter[0][0] .= nr2char(c)
+                            if world.match_mode == 'strings'
+                                let world.filter[0][0] .= nr2char(c)
+                            elseif world.match_mode == 'chars'
+                                call insert(world.filter, [nr2char(c)])
+                            endif
                         endif
                         " continue
+                        if c == 45 && world.filter[0][0] == '-'
+                            let world.state = 'redisplay'
+                        end
                     endif
                 else
                     let world.state = 'redisplay'
@@ -391,80 +481,6 @@ function! s:Init(world, cmd) "{{{3
         call a:world.SetOrigin(1)
         call a:world.Reset(1)
     endif
-endf
-
-
-function! s:GetDList(world) "{{{3
-    call a:world.BuildTable()
-    " TLogDBG 2
-    " TLogDBG len(a:world.table)
-    " TLogVAR a:world.table
-    let a:world.list  = map(copy(a:world.table), 'a:world.GetBaseItem(v:val)')
-    " TLogDBG 3
-    let a:world.llen = len(a:world.list)
-    " TLogVAR a:world.index_table
-    if empty(a:world.index_table)
-        let dindex = range(1, a:world.llen)
-        let a:world.index_width = len(a:world.llen)
-    else
-        let dindex = a:world.index_table
-        let a:world.index_width = len(max(dindex))
-    endif
-    if a:world.llen == 0 && !a:world.show_empty
-        call a:world.ReduceFilter()
-        let a:world.offset = 1
-        " TLogDBG 'ReduceFilter'
-        continue
-    else
-        if a:world.llen == 1
-            let a:world.last_item = a:world.list[0]
-            if a:world.pick_last_item
-                echom 'Pick last item: '. a:world.list[0]
-                let a:world.prefidx = '1'
-                " TLogDBG 'pick last item'
-                throw 'pick'
-            endif
-        else
-            let a:world.last_item = ''
-        endif
-    endif
-    " TLogDBG 4
-    " TLogVAR a:world.idx, a:world.llen, a:world.state
-    " TLogDBG a:world.FilterIsEmpty()
-    if a:world.state == 'display'
-        if a:world.idx == '' && a:world.llen < g:tlib_sortprefs_threshold && !a:world.FilterIsEmpty()
-            let s:world = a:world
-            let pref    = sort(range(1, a:world.llen), 's:SortPrefs')
-            let a:world.prefidx = get(pref, 0, a:world.initial_index)
-        else
-            let a:world.prefidx = a:world.idx == '' ? a:world.initial_index : a:world.idx
-        endif
-        if a:world.prefidx > a:world.llen
-            let a:world.prefidx = a:world.llen
-        elseif a:world.prefidx < 1
-            let a:world.prefidx = 1
-        endif
-    endif
-    " TLogVAR a:world.initial_index, a:world.prefidx
-    " TLogDBG 5
-    " TLogDBG len(a:world.list)
-    " TLogVAR a:world.list
-    let dlist = copy(a:world.list)
-    if !empty(a:world.display_format)
-        let display_format = a:world.display_format
-        let world = a:world
-        " TLogVAR display_format
-        call map(dlist, 'eval(call(function("printf"), a:world.FormatArgs(display_format, v:val)))')
-    endif
-    " TLogVAR a:world.prefidx
-    " TLogDBG 6
-    if a:world.offset_horizontal > 0
-        call map(dlist, 'v:val[a:world.offset_horizontal:-1]')
-    endif
-    " TLogVAR dindex
-    let dlist = map(range(0, a:world.llen - 1), 'printf("%0'. a:world.index_width .'d", dindex[v:val]) .": ". dlist[v:val]')
-    " TLogVAR dlist
-    return dlist
 endf
 
 
@@ -615,7 +631,8 @@ function! tlib#input#Edit(name, value, callback, ...) "{{{3
     imap <buffer> <c-s> <c-o>call <SID>EditCallback(1)<cr>
     map <buffer> <c-w><cr> :call <SID>EditCallback(1)<cr>
     imap <buffer> <c-w><cr> <c-o>call <SID>EditCallback(1)<cr>
-    norm! ggdG
+    call tlib#normal#WithRegister('gg"tdG', 't')
+    norm
     call append(1, split(a:value, "\<c-j>", 1))
     " let hrm = 'DON''T DELETE THIS HEADER'
     " let hr3 = repeat('"', (tlib#win#Width(0) - len(hrm)) / 2)
@@ -623,7 +640,7 @@ function! tlib#input#Edit(name, value, callback, ...) "{{{3
     " hr3.hrm.hr3
     let hd  = ['Keys: <c-s>, <c-w><cr> ... save/accept; <c-w>c ... cancel', s:horizontal_line]
     call append(1, hd)
-    norm! ggdd
+    call tlib#normal#WithRegister('gg"tdd', 't')
     syntax match TlibEditComment /^\%1l.*/
     syntax match TlibEditComment /^```.*/
     hi link TlibEditComment Comment

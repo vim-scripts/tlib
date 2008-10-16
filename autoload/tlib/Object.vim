@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2008-08-20.
-" @Revision:    0.1.118
+" @Last Change: 2008-10-16.
+" @Revision:    0.1.120
 
 " :filedoc:
 " Provides a prototype plus some OO-like methods.
@@ -147,13 +147,16 @@ function! s:prototype.Super(method, arglist) dict "{{{3
 endf
 
 
-function! s:prototype.Methods() dict "{{{3
+function! s:prototype.Methods(...) dict "{{{3
+    TVarArg ['pattern', '\d\+']
     let o = items(self)
     call filter(o, 'type(v:val[1]) == 2 && string(v:val[1]) =~ "^function(''\\d\\+'')"')
     let acc = {}
     for e in o
-        let id = matchstr(string(e[1]), '\d\+')
-        let acc[id] = e[0]
+        let id = matchstr(string(e[1]), pattern)
+        if !empty(id)
+            let acc[id] = e[0]
+        endif
     endfor
     return acc
 endf

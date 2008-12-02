@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-07-20.
-" @Last Change: 2008-07-16.
-" @Revision:    0.0.16
+" @Last Change: 2008-12-01.
+" @Revision:    0.0.17
 
 if &cp || exists("loaded_tlib_rx_autoload")
     finish
@@ -31,6 +31,19 @@ function! tlib#rx#Escape(text, ...) "{{{3
     else
         echoerr 'tlib: Unsupported magic type'
         return a:text
+    endif
+endf
+
+" :def: function! tlib#rx#EscapeReplace(text, ?magic='m')
+" Escape return |sub-replace-special|.
+function! tlib#rx#EscapeReplace(text, ...) "{{{3
+    TVarArg ['magic', 'm']
+    if magic ==# 'm' || magic ==# 'v'
+        return escape(a:text, '&~')
+    elseif magic ==# 'M' || magic ==# 'V'
+        return a:text
+    else
+        echoerr 'magic must be one of: m, v, M, V'
     endif
 endf
 

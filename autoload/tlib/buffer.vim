@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-10-06.
-" @Revision:    0.0.255
+" @Last Change: 2008-12-01.
+" @Revision:    0.0.260
 
 if &cp || exists("loaded_tlib_buffer_autoload")
     finish
@@ -238,6 +238,7 @@ function! tlib#buffer#InsertText(text, ...) "{{{3
     TKeyArg keyargs, ['shift', 0], ['col', col('.')], ['lineno', line('.')], ['pos', 'e'],
                 \ ['indent', 0]
     " TLogVAR shift, col, lineno, pos, indent
+    let post_del_last_line = line('$') == 1
     let line = getline(lineno)
     if col + shift > 0
         let pre  = line[0 : (col - 1 + shift)]
@@ -289,6 +290,9 @@ function! tlib#buffer#InsertText(text, ...) "{{{3
     " exec 'norm! '. lineno .'Gdd'
     call tlib#normal#WithRegister('"tdd', 't')
     call append(lineno - 1, text)
+    if post_del_last_line
+        call tlib#buffer#KeepCursorPosition('$delete')
+    endif
     let tlen = len(text)
     let posshift = matchstr(pos, '\d\+')
     if pos =~ '^e'
@@ -326,5 +330,16 @@ endf
 
 function! tlib#buffer#CurrentByte() "{{{3
     return line2byte(line('.')) + col('.')
+endf
+
+
+" Evaluate cmd while maintaining the cursor position and jump registers.
+function! tlib#buffer#KeepCursorPosition(cmd) "{{{3
+    let pos = getpos('.')
+    try
+        keepjumps exec a:cmd
+    finally
+        call setpos('.', pos)
+    endtry
 endf
 

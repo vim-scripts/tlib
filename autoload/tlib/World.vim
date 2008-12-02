@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2008-10-16.
-" @Revision:    0.1.518
+" @Last Change: 2008-12-01.
+" @Revision:    0.1.669
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -24,9 +24,10 @@ let s:prototype = tlib#Object#New({
             \ 'base': [], 
             \ 'bufnr': -1,
             \ 'display_format': '',
+            \ 'filetype': '',
             \ 'filter': [['']],
             \ 'filter_format': '',
-            \ 'filter_options': '\c',
+            \ 'filter_options': '',
             \ 'follow_cursor': '',
             \ 'index_table': [],
             \ 'initial_filter': [['']],
@@ -35,7 +36,7 @@ let s:prototype = tlib#Object#New({
             \ 'initialized': 0,
             \ 'key_handlers': [],
             \ 'list': [],
-            \ 'match_mode': 'strings',
+            \ 'matcher': {},
             \ 'next_state': '',
             \ 'numeric_chars': tlib#var#Get('tlib_numeric_chars', 'bg'),
             \ 'offset': 1,
@@ -62,13 +63,16 @@ let s:prototype = tlib#Object#New({
             \ 'win_wnr': -1,
             \ })
             " \ 'handlers': [],
+            " \ 'filter_options': '\c',
 
 function! tlib#World#New(...)
     let object = s:prototype.New(a:0 >= 1 ? a:1 : {})
+    call object.SetMatchMode(tlib#var#Get('tlib_inputlist_match', 'g', 'cnf'))
     return object
 endf
 
 
+" :nodoc:
 function! s:prototype.Set_display_format(value) dict "{{{3
     if a:value == 'filename'
         call self.Set_highlight_filename()
@@ -79,6 +83,7 @@ function! s:prototype.Set_display_format(value) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.Set_highlight_filename() dict "{{{3
     let self.tlib_UseInputListScratch = 'call world.Highlight_filename()'
     "             \ 'syntax match TLibMarker /\%>'. (1 + eval(g:tlib_inputlist_width_filename)) .'c |.\{-}| / | hi def link TLibMarker Special'
@@ -86,6 +91,7 @@ function! s:prototype.Set_highlight_filename() dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.Highlight_filename() dict "{{{3
     " exec 'syntax match TLibDir /\%>'. (3 + eval(g:tlib_inputlist_width_filename)) .'c \(\S:\)\?[\/].*$/ contained containedin=TLibMarker'
     exec 'syntax match TLibDir /\(\a:\|\.\.\..\{-}\)\?[\/][^&<>*|]*$/ contained containedin=TLibMarker'
@@ -95,6 +101,7 @@ function! s:prototype.Highlight_filename() dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.FormatFilename(file) dict "{{{3
     let fname = fnamemodify(a:file, ":p:t")
     " let fname = fnamemodify(a:file, ":t")
@@ -137,6 +144,7 @@ function! s:prototype.FormatFilename(file) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.GetSelectedItems(current) dict "{{{3
     if stridx(self.type, 'i') != -1
         let rv = copy(self.sel_idx)
@@ -161,6 +169,7 @@ function! s:prototype.GetSelectedItems(current) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.SelectItem(mode, index) dict "{{{3
     let bi = self.GetBaseIdx(a:index)
     " if self.RespondTo('MaySelectItem')
@@ -181,17 +190,20 @@ function! s:prototype.SelectItem(mode, index) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.FormatArgs(format_string, arg) dict "{{{3
     let nargs = len(substitute(a:format_string, '%%\|[^%]', '', 'g'))
     return [a:format_string] + repeat([string(a:arg)], nargs)
 endf
 
 
+" :nodoc:
 function! s:prototype.GetRx(filter) dict "{{{3
     return '\('. join(filter(copy(a:filter), 'v:val[0] != "!"'), '\|') .'\)' 
 endf
 
 
+" :nodoc:
 function! s:prototype.GetRx0(...) dict "{{{3
     exec tlib#arg#Let(['negative'])
     let rx0 = []
@@ -207,22 +219,25 @@ function! s:prototype.GetRx0(...) dict "{{{3
     if empty(rx0s)
         return ''
     else
-        return '\V\('. rx0s .'\)'
+        return self.FilterRxPrefix() .'\('. rx0s .'\)'
     endif
 endf
 
 
+" :nodoc:
 function! s:prototype.FormatName(format, value) dict "{{{3
     let world = self
     return eval(call(function("printf"), self.FormatArgs(a:format, a:value)))
 endf
 
 
+" :nodoc:
 function! s:prototype.GetItem(idx) dict "{{{3
     return self.list[a:idx - 1]
 endf
 
 
+" :nodoc:
 function! s:prototype.GetListIdx(baseidx) dict "{{{3
     " if empty(self.index_table)
         let baseidx = a:baseidx
@@ -236,6 +251,7 @@ function! s:prototype.GetListIdx(baseidx) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.GetBaseIdx(idx) dict "{{{3
     " TLogVAR a:idx, self.table, self.index_table
     if !empty(self.table) && a:idx > 0 && a:idx <= len(self.table)
@@ -246,16 +262,45 @@ function! s:prototype.GetBaseIdx(idx) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.GetBaseItem(idx) dict "{{{3
     return self.base[a:idx - 1]
 endf
 
 
+" :nodoc:
 function! s:prototype.SetBaseItem(idx, item) dict "{{{3
     let self.base[a:idx - 1] = a:item
 endf
 
 
+" :nodoc:
+function! s:prototype.SetPrefIdx() dict "{{{3
+    " let pref = sort(range(1, self.llen), 'self.SortPrefs')
+    " let self.prefidx = get(pref, 0, self.initial_index)
+    let pref_idx = -1
+    let pref_weight = -1
+    " TLogVAR self.filter_pos, self.filter_neg
+    for idx in range(1, self.llen)
+        let item = self.GetItem(idx)
+        let weight = self.matcher.AssessName(self, item)
+        " TLogVAR item, weight
+        if weight > pref_weight
+            let pref_idx = idx
+            let pref_weight = weight
+        endif
+    endfor
+    " TLogVAR pref_idx
+    " TLogDBG self.GetItem(pref_idx)
+    if pref_idx == -1
+        let self.prefidx = self.initial_index
+    else
+        let self.prefidx = pref_idx
+    endif
+endf
+
+
+" :nodoc:
 function! s:prototype.GetCurrentItem() dict "{{{3
     let idx = self.prefidx
     " TLogVAR idx
@@ -274,6 +319,7 @@ function! s:prototype.GetCurrentItem() dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.CurrentItem() dict "{{{3
     if stridx(self.type, 'i') != -1
         return self.GetBaseIdx(self.llen == 1 ? 1 : self.prefidx)
@@ -289,28 +335,43 @@ function! s:prototype.CurrentItem() dict "{{{3
 endf
 
 
-function! s:prototype.SetFilter() dict "{{{3
-    " let mrx = '\V'. (a:0 >= 1 && a:1 ? '\C' : '')
-    let mrx = '\V'. self.filter_options
-    let self.filter_pos = []
-    let self.filter_neg = []
-    for filter in self.filter
-        " TLogVAR filter
-        let rx = join(reverse(filter(copy(filter), '!empty(v:val)')), '\|')
-        " TLogVAR rx
-        if rx[0] == g:tlib_inputlist_not
-            if len(rx) > 1
-                call add(self.filter_neg, mrx .'\('. rx[1:-1] .'\)')
-            endif
-        else
-            call add(self.filter_pos, mrx .'\('. rx .'\)')
-        endif
-    endfor
+" :nodoc:
+function! s:prototype.FilterRxPrefix() dict "{{{3
+    return self.matcher.FilterRxPrefix()
 endf
 
 
+" :nodoc:
+function! s:prototype.SetFilter() dict "{{{3
+    " let mrx = '\V'. (a:0 >= 1 && a:1 ? '\C' : '')
+    let mrx = self.FilterRxPrefix() . self.filter_options
+    let self.filter_pos = []
+    let self.filter_neg = []
+    " TLogVAR self.filter
+    for filter in self.filter
+        " TLogVAR filter
+        let rx = join(reverse(filter(copy(filter), '!empty(v:val)')), '\|')
+        if rx =~ '\u'
+            let mrx1 = mrx .'\C'
+        else
+            let mrx1 = mrx
+        endif
+        " TLogVAR rx
+        if rx[0] == g:tlib_inputlist_not
+            if len(rx) > 1
+                call add(self.filter_neg, mrx1 .'\('. rx[1:-1] .'\)')
+            endif
+        else
+            call add(self.filter_pos, mrx1 .'\('. rx .'\)')
+        endif
+    endfor
+    " TLogVAR self.filter_pos, self.filter_neg
+endf
+
+
+" :nodoc:
 function! s:prototype.IsValidFilter() dict "{{{3
-    let last = '\V\('. self.filter[0][0] .'\)'
+    let last = self.FilterRxPrefix() .'\('. self.filter[0][0] .'\)'
     " TLogVAR last
     try
         let a = match("", last)
@@ -321,66 +382,46 @@ function! s:prototype.IsValidFilter() dict "{{{3
 endf
 
 
-function! s:prototype.SetMatchMode() dict "{{{3
-    let match_mode = tlib#var#Get('tlib_inputlist_match', 'bg')
-    if !empty(match_mode)
-        if index(['strings', 'chars'], match_mode) != -1
-            let self.match_mode = match_mode
-        else
-            throw 'tlib: Unknown mode for tlib_inputlist_match: '. match_mode
-        endif
+" :nodoc:
+function! s:prototype.SetMatchMode(match_mode) dict "{{{3
+    " TLogVAR a:match_mode
+    if !empty(a:match_mode)
+        unlet self.matcher
+        try
+            let self.matcher = tlib#Filter_{a:match_mode}#New()
+        catch /^Vim\%((\a\+)\)\=:E117/
+            throw 'tlib: Unknown mode for tlib_inputlist_match: '. a:match_mode
+        endtry
     endif
 endf
 
 
-function! s:prototype.Match(text, ...) dict "{{{3
-    for rx in self.filter_neg
-        " TLogVAR rx
-        if a:text =~ rx
-            return 0
-        endif
-    endfor
-    for rx in self.filter_pos
-        " TLogVAR rx
-        if a:text !~ rx
-            return 0
-        endif
-    endfor
-    " for filter in self.filter
-    "     " TLogVAR filter
-    "     let rx = join(reverse(filter(copy(filter), '!empty(v:val)')), '\|')
-    "     " TLogVAR rx
-    "     if rx[0] == g:tlib_inputlist_not
-    "         if len(rx) > 1 && a:text =~ mrx .'\('. rx[1:-1] .'\)'
-    "             return 0
-    "         endif
-    "     elseif a:text !~ mrx .'\('. rx .'\)'
-    "         return 0
-    "     endif
-    "     " if a:text !~ mrx. self.GetRx(filter)
-    "     "     return 0
-    "     " endif
-    " endfor
-    return 1
-endf
+" function! s:prototype.Match(text) dict "{{{3
+"     return self.matcher.Match(self, text)
+" endf
 
 
+" :nodoc:
 function! s:prototype.MatchBaseIdx(idx) dict "{{{3
     let text = self.GetBaseItem(a:idx)
     if !empty(self.filter_format)
         let text = self.FormatName(self.filter_format, text)
     endif
     " TLogVAR text
-    return self.Match(text)
+    " return self.Match(text)
+    return self.matcher.Match(self, text)
 endf
 
 
+" :nodoc:
 function! s:prototype.BuildTable() dict "{{{3
     call self.SetFilter()
+    " TLogVAR self.filter_neg, self.filter_pos
     let self.table = filter(range(1, len(self.base)), 'self.MatchBaseIdx(v:val)')
 endf
 
 
+" :nodoc:
 function! s:prototype.ReduceFilter() dict "{{{3
     " TLogVAR self.filter
     if self.filter[0] == [''] && len(self.filter) > 1
@@ -388,11 +429,12 @@ function! s:prototype.ReduceFilter() dict "{{{3
     elseif empty(self.filter[0][0]) && len(self.filter[0]) > 1
         call remove(self.filter[0], 0)
     else
-        let self.filter[0][0] = self.filter[0][0][0:-2]
+        call self.matcher.ReduceFrontFilter(self)
     endif
 endf
 
 
+" :nodoc:
 function! s:prototype.SetInitialFilter(filter) dict "{{{3
     " let self.initial_filter = [[''], [a:filter]]
     if type(a:filter) == 3
@@ -403,6 +445,7 @@ function! s:prototype.SetInitialFilter(filter) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.PopFilter() dict "{{{3
     " TLogVAR self.filter
     if len(self.filter[0]) > 1
@@ -415,44 +458,66 @@ function! s:prototype.PopFilter() dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.FilterIsEmpty() dict "{{{3
     " TLogVAR self.filter
     return self.filter == copy(self.initial_filter)
 endf
 
 
+" :nodoc:
 function! s:prototype.DisplayFilter() dict "{{{3
-    " TLogVAR self.filter
-    let filter1 = deepcopy(self.filter)
+    let filter1 = copy(self.filter)
     call filter(filter1, 'v:val != [""]')
-    " TLogVAR filter1
-    if self.match_mode == 'strings'
-        call map(filter1, '"(". join(reverse(v:val), " OR ") .")"')
-        return join(reverse(filter1), ' AND ')
-    elseif self.match_mode == 'chars'
-        call map(filter1, 'v:val[0]')
-        return '['. join(reverse(filter1), '') .']'
-    end
+    " TLogVAR self.matcher['_class']
+    let rv = self.matcher.DisplayFilter(filter1)
+    let rv = self.CleanFilter(rv)
+    return rv
 endf
 
 
+" :nodoc:
+function! s:prototype.SetFrontFilter(pattern) dict "{{{3
+    call self.matcher.SetFrontFilter(self, a:pattern)
+endf
+
+
+" :nodoc:
+function! s:prototype.PushFrontFilter(char) dict "{{{3
+    call self.matcher.PushFrontFilter(self, a:char)
+endf
+
+
+" :nodoc:
+function! s:prototype.CleanFilter(filter) dict "{{{3
+    return self.matcher.CleanFilter(a:filter)
+endf
+
+
+" :nodoc:
 function! s:prototype.UseScratch() dict "{{{3
     return tlib#scratch#UseScratch(self)
 endf
 
 
+" :nodoc:
 function! s:prototype.CloseScratch(...) dict "{{{3
     TVarArg ['reset_scratch', 0]
     " TVarArg ['reset_scratch', 1]
     " TLogVAR reset_scratch
-    let rv = tlib#scratch#CloseScratch(self, reset_scratch)
-    if rv
-        call self.SwitchWindow('win')
+    if self.sticky
+        return 0
+    else
+        let rv = tlib#scratch#CloseScratch(self, reset_scratch)
+        if rv
+            call self.SwitchWindow('win')
+        endif
+        return rv
     endif
-    return rv
 endf
 
 
+" :nodoc:
 function! s:prototype.UseInputListScratch() dict "{{{3
     let scratch = self.UseScratch()
     " TLogVAR scratch
@@ -473,6 +538,7 @@ endf
 
 
 " :def: function! s:prototype.Reset(?initial=0)
+" :nodoc:
 function! s:prototype.Reset(...) dict "{{{3
     TVarArg ['initial', 0]
     " TLogVAR initial
@@ -489,11 +555,13 @@ function! s:prototype.Reset(...) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.ResetSelected() dict "{{{3
     let self.sel_idx   = []
 endf
 
 
+" :nodoc:
 function! s:prototype.Retrieve(anyway) dict "{{{3
     " TLogVAR a:anyway, self.base
     " TLogDBG (a:anyway || empty(self.base))
@@ -513,9 +581,10 @@ function! s:prototype.Retrieve(anyway) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.DisplayHelp() dict "{{{3
+    " \ 'Help:',
     let help = [
-                \ 'Help:',
                 \ 'Mouse        ... Pick an item            Letter          ... Filter the list',
                 \ printf('Number       ... Pick an item            "%s", "%s", %sWORD ... AND, OR, NOT',
                 \   g:tlib_inputlist_and, g:tlib_inputlist_or, g:tlib_inputlist_not),
@@ -547,13 +616,8 @@ function! s:prototype.DisplayHelp() dict "{{{3
     endfor
     let help += [
                 \ '',
-                \ 'Warning:',
-                \ 'Please don''t resize the window with the mouse.',
-                \ '',
-                \ 'Note on filtering:',
-                \ 'The filter is prepended with "\V". Basically, filtering is case-insensitive.',
-                \ 'Letters at word boundaries or upper-case lettes in camel-case names is given',
-                \ 'more weight. If an OR-joined pattern start with "!", matches will be excluded.',
+                \ 'Exact matches and matches at word boundaries is given more weight.',
+                \ 'Warning: Please don''t resize the window with the mouse.',
                 \ '',
                 \ 'Press any key to continue.',
                 \ ]
@@ -567,6 +631,7 @@ function! s:prototype.DisplayHelp() dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.Resize(hsize, vsize) dict "{{{3
     " TLogVAR self.scratch_vertical, a:hsize, a:vsize
     if self.scratch_vertical
@@ -582,6 +647,7 @@ endf
 
 
 " :def: function! s:prototype.DisplayList(query, ?list)
+" :nodoc:
 function! s:prototype.DisplayList(query, ...) dict "{{{3
     " TLogVAR a:query
     " TLogVAR self.state
@@ -653,19 +719,21 @@ function! s:prototype.DisplayList(query, ...) dict "{{{3
             endif
         endif
         let query   = a:query
-        let options = []
+        let options = [self.matcher.name]
         if self.sticky
-            call add(options, 's')
+            call add(options, '#')
         endif
         if !empty(options)
-            let query .= printf(' [%s]', join(options))
+            let query .= printf('%%=[%s] ', join(options, ', '))
         endif
+        " TLogVAR query
         let &statusline = query
     endif
     redraw
 endf
 
 
+" :nodoc:
 function! s:prototype.SetOffset() dict "{{{3
     " TLogVAR self.prefidx, self.offset
     " TLogDBG winheight(0)
@@ -690,6 +758,21 @@ function! s:prototype.SetOffset() dict "{{{3
 endf
 
 
+" :nodoc:
+function! s:prototype.ClearAllMarks() dict "{{{3
+    let x = self.index_width + 1
+    call map(range(1, line('$')), 'self.DisplayListMark(x, v:val, ":")')
+endf
+
+
+" :nodoc:
+function! s:prototype.MarkCurrent(y) dict "{{{3
+    let x = self.index_width + 1
+    call self.DisplayListMark(x, a:y, '*')
+endf
+
+
+" :nodoc:
 function! s:prototype.DisplayListMark(x, y, mark) dict "{{{3
     " TLogVAR a:y, a:mark
     if a:x > 0 && a:y >= 0
@@ -706,6 +789,7 @@ function! s:prototype.DisplayListMark(x, y, mark) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.SwitchWindow(where) dict "{{{3
     let wnr = get(self, a:where.'_wnr')
     " TLogVAR self, wnr
@@ -713,6 +797,7 @@ function! s:prototype.SwitchWindow(where) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.FollowCursor() dict "{{{3
     if !empty(self.follow_cursor)
         let back = self.SwitchWindow('win')
@@ -727,6 +812,7 @@ function! s:prototype.FollowCursor() dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.SetOrigin(...) dict "{{{3
     TVarArg ['winview', 0]
     " TLogVAR self.win_wnr, self.bufnr
@@ -744,6 +830,7 @@ function! s:prototype.SetOrigin(...) dict "{{{3
 endf
 
 
+" :nodoc:
 function! s:prototype.RestoreOrigin(...) dict "{{{3
     TVarArg ['winview', 0]
     if winview

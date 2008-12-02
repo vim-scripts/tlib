@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-10-16.
-" @Revision:    0.0.534
+" @Last Change: 2008-12-01.
+" @Revision:    0.0.620
 
 if &cp || exists("loaded_tlib_input_autoload")
     finish
@@ -38,6 +38,12 @@ let loaded_tlib_input_autoload = 1
 "     si ... Return the index of the selected element
 "     m  ... Return a list of selcted elements
 "     mi ... Return a list of indexes
+"
+" Several pattern matching styles are supported. See:
+"   - |tlib#Filter_cnf#New()|
+"   - |tlib#Filter_cnfd#New()|
+"   - |tlib#Filter_fuzzy#New()|
+"   - |tlib#Filter_seq#New()|
 "
 " EXAMPLES: >
 "   echo tlib#input#List('s', 'Select one item', [100,200,300])
@@ -112,8 +118,10 @@ endf
 function! tlib#input#ListW(world, ...) "{{{3
     TVarArg 'cmd'
     let world = a:world
+    let world.filetype = &filetype
+    call world.SetMatchMode(tlib#var#Get('tlib_inputlist_match', 'wb'))
     call s:Init(world, cmd)
-    " TLogVAR world.initial_index
+    " TLogVAR world.state, world.sticky, world.initial_index
     let key_agents = copy(g:tlib_keyagents_InputList_s)
     if stridx(world.type, 'm') != -1
         call extend(key_agents, g:tlib_keyagents_InputList_m, 'force')
@@ -130,7 +138,6 @@ function! tlib#input#ListW(world, ...) "{{{3
     let @/ = ''
     let &laststatus = 2
     let world.initial_display = 1
-    call world.SetMatchMode()
 
     try
         while !empty(world.state) && world.state !~ '^exit' && (world.show_empty || !empty(world.base))
@@ -172,8 +179,16 @@ function! tlib#input#ListW(world, ...) "{{{3
                     let world.prefidx = world.offset
                     let world.state = 'redisplay'
                 endif
+                if world.state =~ '\<sticky\>'
+                    let world.sticky = 1
+                endif
                 " TLogVAR world.filter
-                if world.state =~ 'display'
+                " TLogVAR world.sticky
+                if world.state =~ '\<pick\>'
+                    let world.rv = world.CurrentItem()
+                    " TLogVAR world.rv
+                    throw 'pick'
+                elseif world.state =~ 'display'
                     if world.IsValidFilter() && world.state =~ '^display'
 
                         call world.BuildTable()
@@ -200,7 +215,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                             if world.llen == 1
                                 let world.last_item = world.list[0]
                                 if world.pick_last_item
-                                    echom 'Pick last item: '. world.list[0]
+                                    " echom 'Pick last item: '. world.list[0]
                                     let world.prefidx = '1'
                                     " TLogDBG 'pick last item'
                                     throw 'pick'
@@ -214,9 +229,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                         " TLogDBG world.FilterIsEmpty()
                         if world.state == 'display'
                             if world.idx == '' && world.llen < g:tlib_sortprefs_threshold && !world.FilterIsEmpty()
-                                let s:world = world
-                                let pref    = sort(range(1, world.llen), 's:SortPrefs')
-                                let world.prefidx = get(pref, 0, world.initial_index)
+                                call world.SetPrefIdx()
                             else
                                 let world.prefidx = world.idx == '' ? world.initial_index : world.idx
                             endif
@@ -246,6 +259,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                         " TLogVAR dlist
 
                     endif
+
                     " TLogDBG 7
                     " TLogVAR world.prefidx, world.offset
                     " TLogDBG (world.prefidx > world.offset + winheight(0) - 1)
@@ -337,25 +351,17 @@ function! tlib#input#ListW(world, ...) "{{{3
                         let world.idx = ''
                         " TLogVAR world.filter
                         if world.llen > g:tlib_inputlist_livesearch_threshold
-                            let pattern = input('Filter: ', world.filter[0][0] . nr2char(c))
+                            let pattern = input('Filter: ', world.CleanFilter(world.filter[0][0]) . nr2char(c))
                             if empty(pattern)
                                 let world.state = 'exit empty'
                             else
-                                if world.match_mode == 'strings'
-                                    let world.filter[0] = split(pattern, '\s*|\s*') + world.filter[0][1 : -1]
-                                elseif world.match_mode == 'chars'
-                                    let world.filter = map(split(pattern, '\zs'), '[v:val]') + world.filter[1 : -1]
-                                endif
+                                call world.SetFrontFilter(pattern)
                                 echo
                             endif
                         elseif c == 124
                             call insert(world.filter[0], [])
                         else
-                            if world.match_mode == 'strings'
-                                let world.filter[0][0] .= nr2char(c)
-                            elseif world.match_mode == 'chars'
-                                call insert(world.filter, [nr2char(c)])
-                            endif
+                            call world.PushFrontFilter(c)
                         endif
                         " continue
                         if c == 45 && world.filter[0][0] == '-'
@@ -368,8 +374,10 @@ function! tlib#input#ListW(world, ...) "{{{3
                 endif
 
             catch /^pick$/
+                call world.ClearAllMarks()
+                call world.MarkCurrent(world.prefidx)
                 let world.state = ''
-                " echom 'Pick item #'. world.prefidx
+                " TLogDBG 'Pick item #'. world.prefidx
 
             finally
                 " TLogDBG 'finally 1'
@@ -402,6 +410,7 @@ function! tlib#input#ListW(world, ...) "{{{3
             " TLogDBG 'state1='. world.state
         endwh
 
+        " TLogVAR world.state
         " TLogDBG 'exit while loop'
         " TLogVAR world.list
         " TLogVAR world.sel_idx
@@ -409,6 +418,9 @@ function! tlib#input#ListW(world, ...) "{{{3
         " TLogVAR world.prefidx
         " TLogVAR world.rv
         " TLogVAR world.type, world.state, world.return_agent, world.index_table, world.rv
+        if world.state =~ '\<\(empty\|escape\)\>'
+            let world.sticky = 0
+        endif
         if world.state =~ '\<suspend\>'
             " TLogDBG 'return suspended'
             " TLogVAR world.prefidx
@@ -444,12 +456,17 @@ function! tlib#input#ListW(world, ...) "{{{3
     finally
         let &statusline = statusline
         let &laststatus = laststatus
-        silent! let @/          = lastsearch
+        silent! let @/  = lastsearch
         " TLogDBG 'finally 2'
         " TLogDBG string(world.Methods())
+        " TLogVAR world.state
         if world.state !~ '\<suspend\>'
+            " TLogVAR world.sticky
             if world.sticky
+                " TLogVAR world.bufnr
+                " TLogDBG bufwinnr(world.bufnr)
                 if bufwinnr(world.bufnr) == -1
+                    " TLogDBG "UseScratch"
                     call world.UseScratch()
                 endif
                 let world = tlib#agent#SuspendToParentWindow(world, world.GetSelectedItems(world.rv))
@@ -471,68 +488,26 @@ endf
 
 
 function! s:Init(world, cmd) "{{{3
+    " TLogVAR a:cmd
+    if a:cmd =~ '\<sticky\>'
+        let a:world.sticky = 1
+    endif
     if a:cmd =~ '^resume'
         call a:world.UseInputListScratch()
         let a:world.initial_index = line('.')
-        call a:world.Retrieve(1)
+        if a:cmd =~ '\<pick\>'
+            let a:world.state = 'pick'
+            let a:world.prefidx = a:world.initial_index
+        else
+            call a:world.Retrieve(1)
+        endif
     elseif !a:world.initialized
         " TLogVAR a:world.initialized, a:world.win_wnr, a:world.bufnr
         let a:world.initialized = 1
         call a:world.SetOrigin(1)
         call a:world.Reset(1)
     endif
-endf
-
-
-function! s:AssessName(name) "{{{3
-    let xa  = 0
-    for fltl in s:world.filter
-        let flt = s:world.GetRx(fltl)
-        if a:name =~# '\V'. flt
-            let xa += 3
-        endif
-        if a:name =~ '\V\^'. flt .'\|'. flt .'\$'
-            let xa += 3
-        elseif a:name =~ '\V\<'. flt .'\|'. flt .'\>'
-            let xa += 2
-        elseif a:name =~ '\V\A'. flt .'\|'. flt .'\A'
-            let xa += 1
-        endif
-        if flt[0] =~# '\u' && matchstr(a:name, '\V\.\ze'. flt) =~# '\U'
-            let xa += 1
-        endif
-        if flt[0] =~# '\U' && matchstr(a:name, '\V\.\ze'. flt) =~# '\u'
-            let xa += 1
-        endif
-        if flt[-1] =~# '\u' && matchstr(a:name, '\V'. flt .'\zs\.') =~# '\U'
-            let xa += 1
-        endif
-        if flt[-1] =~# '\U' && matchstr(a:name, '\V'. flt .'\zs\.') =~# '\u'
-            let xa += 1
-        endif
-    endfor
-    return xa
-endf
-
-
-function! s:SortPrefs(a, b) "{{{3
-    let a = s:world.GetItem(a:a)
-    let b = s:world.GetItem(a:b)
-    let xa = s:AssessName(a)
-    let xb = s:AssessName(b)
-    if a < b
-        let xa += 1
-    elseif b < a
-        let xb += 1
-    endif
-    " let la = len(a)
-    " let lb = len(b)
-    " if la < lb
-    "     let xa += 1
-    " elseif lb < la
-    "     let xb += 1
-    " endif
-    return xa == xb ? 0 : xa < xb ? 1 : -1
+    " TLogVAR a:world.state, a:world.sticky
 endf
 
 
@@ -561,17 +536,24 @@ function! tlib#input#EditList(query, list, ...) "{{{3
 endf
 
 
-function! tlib#input#Resume(name) "{{{3
+function! tlib#input#Resume(name, pick) "{{{3
     echo
     if exists('b:tlib_suspend')
-        for m in b:tlib_suspend
+        for [m, pick] in items(b:tlib_suspend)
             exec 'unmap <buffer> '. m
         endfor
         unlet b:tlib_suspend
     endif
     let b:tlib_{a:name}.state = 'display'
     " call tlib#input#List('resume '. a:name)
-    call tlib#input#ListW(b:tlib_{a:name}, 'resume '. a:name)
+    let cmd = 'resume '. a:name
+    if a:pick >= 1
+        let cmd .= ' pick'
+        if a:pick >= 2
+            let cmd .= ' sticky'
+        end
+    endif
+    call tlib#input#ListW(b:tlib_{a:name}, cmd)
 endf
 
 
@@ -625,12 +607,20 @@ function! tlib#input#Edit(name, value, callback, ...) "{{{3
     TVarArg ['args', []]
     let sargs = {'scratch': '__EDIT__'. a:name .'__'}
     let scr = tlib#scratch#UseScratch(sargs)
+
+    " :nodoc:
     map <buffer> <c-w>c :call <SID>EditCallback(0)<cr>
+    " :nodoc:
     imap <buffer> <c-w>c <c-o>call <SID>EditCallback(0)<cr>
+    " :nodoc:
     map <buffer> <c-s> :call <SID>EditCallback(1)<cr>
+    " :nodoc:
     imap <buffer> <c-s> <c-o>call <SID>EditCallback(1)<cr>
+    " :nodoc:
     map <buffer> <c-w><cr> :call <SID>EditCallback(1)<cr>
+    " :nodoc:
     imap <buffer> <c-w><cr> <c-o>call <SID>EditCallback(1)<cr>
+    
     call tlib#normal#WithRegister('gg"tdG', 't')
     norm
     call append(1, split(a:value, "\<c-j>", 1))

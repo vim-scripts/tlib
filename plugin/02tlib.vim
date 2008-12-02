@@ -3,13 +3,15 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2008-10-16.
-" @Revision:    478
+" @Last Change: 2008-12-01.
+" @Revision:    521
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
 "
 " TODO:
+" - tlib#input#List(): RightMouse -> Make commands accessible via 
+"   popup-menu
 " - List isn't updated on some occassions (eg tselectfiles + pick file 
 "   per mouse) when resetting the state from an post-process agent
 " - tlib#agent#SwitchLayout(): switch between horizontal and vertical 
@@ -19,7 +21,6 @@
 " - tlib#input#EditList(): Disable selection by index number
 " - tlib#input#List(): Some kind of command line to edit some 
 "   preferences (sort etc.) on the fly
-" - tlib#input#List(): Make commands accessible via popup-menu
 
 if &cp || exists("loaded_tlib")
     finish
@@ -28,7 +29,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 26
+let loaded_tlib = 28
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -126,10 +127,10 @@ TLet g:tlib_inputlist_livesearch_threshold = 500
 " disk when doing this.
 TLet g:tlib_inputlist_filename_indicators = 0
 
-" Can be "strings" or "chars".
-"   strings :: substrings
-"   chars   :: match characters
-TLet g:tlib_inputlist_match = 'strings'
+" Can be "cnf" or "fuzzy".
+"   cnf   :: substrings
+"   fuzzy :: match characters
+TLet g:tlib_inputlist_match = 'cnf'
 
 " Extra tags for |tlib#tag#Retrieve()| (see there). Can also be buffer-local.
 TLet g:tlib_tags_extra = ''
@@ -146,6 +147,12 @@ TLet g:tlib_tag_substitute = {
             \   ['"\?\s*{{{\d.*$', '', ''],
             \ ],
             \ }
+
+" " Alternative rx for keywords, in case 'iskeyword' is inadequate for 
+" " the purposes of tlib but you don't want to change it's value.
+" TLet g:tlib_keyword_rx = {
+"             \ 'vim': '\(\w\|#\)',
+"             \ }
 
 TLet g:tlib_filename_sep = '/'
 " TLet g:tlib_filename_sep = exists('+shellslash') && !&shellslash ? '\' : '/'   " {{{2
@@ -470,4 +477,23 @@ messages (contributed by Erik Falor)
 - FIX: Cosmetic bug, wrong packaging (thanks Nathan Neff)
 - Meaning of World#filter_format changed; new World#filter_options 
 - Filtering didn't work as advertised
+- tlib#string#Count()
+
+0.28
+- tlib#input#List():
+-- Improved handling of sticky lists; <cr> and <Leftmouse> resume a 
+suspended list and immediately selects the item under the cursor
+-- Experimental "seq" matching style: the conjunctions are sequentially 
+ordered, they are combined with "OR" (disjunctions), the regexp is 
+'magic', and "." is expanded to '.\{-}'
+-- Experimental "cnfd" matching style: Same as cnf but with an "elastic" 
+dot "." that matches '\.\{-}'
+-- Filtering acts as if &ic=1 && $sc=1
+-- Weighting is done by the filter
+- tlib#agent#Input(): Consume <esc> when aborting input()
+- INCOMPATIBLE CHANGE: Changed eligible values of g:tlib_inputlist_match 
+to "cnf", "cnfd", "seq" and "fuzzy"
+- NEW: tlib#buffer#KeepCursorPosition()
+- tlib#buffer#InsertText(): Take care of the extra line when appending 
+text to an empty buffer.
 

@@ -56,6 +56,14 @@ Contents~
         g:tlib_scroll_lines ..................... |g:tlib_scroll_lines|
         g:tlib_keyagents_InputList_m ............ |g:tlib_keyagents_InputList_m|
         g:tlib_handlers_EditList ................ |g:tlib_handlers_EditList|
+    autoload/tlib/Filter_cnf.vim
+        tlib#Filter_cnf#New ..................... |tlib#Filter_cnf#New()|
+    autoload/tlib/Filter_cnfd.vim
+        tlib#Filter_cnfd#New .................... |tlib#Filter_cnfd#New()|
+    autoload/tlib/Filter_fuzzy.vim
+        tlib#Filter_fuzzy#New ................... |tlib#Filter_fuzzy#New()|
+    autoload/tlib/Filter_seq.vim
+        tlib#Filter_seq#New ..................... |tlib#Filter_seq#New()|
     autoload/tlib/Object.vim
         tlib#Object#New ......................... |tlib#Object#New()|
         prototype.New
@@ -68,49 +76,6 @@ Contents~
         prototype.Methods
     autoload/tlib/World.vim
         tlib#World#New .......................... |tlib#World#New()|
-        prototype.Set_display_format
-        prototype.Set_highlight_filename
-        prototype.Highlight_filename
-        prototype.FormatFilename
-        prototype.GetSelectedItems
-        prototype.SelectItem
-        prototype.FormatArgs
-        prototype.GetRx
-        prototype.GetRx0
-        prototype.FormatName
-        prototype.GetItem
-        prototype.GetListIdx
-        prototype.GetBaseIdx
-        prototype.GetBaseItem
-        prototype.SetBaseItem
-        prototype.GetCurrentItem
-        prototype.CurrentItem
-        prototype.SetFilter
-        prototype.IsValidFilter
-        prototype.SetMatchMode
-        prototype.Match
-        prototype.MatchBaseIdx
-        prototype.BuildTable
-        prototype.ReduceFilter
-        prototype.SetInitialFilter
-        prototype.PopFilter
-        prototype.FilterIsEmpty
-        prototype.DisplayFilter
-        prototype.UseScratch
-        prototype.CloseScratch
-        prototype.UseInputListScratch
-        prototype.Reset
-        prototype.ResetSelected
-        prototype.Retrieve
-        prototype.DisplayHelp
-        prototype.Resize
-        prototype.DisplayList
-        prototype.SetOffset
-        prototype.DisplayListMark
-        prototype.SwitchWindow
-        prototype.FollowCursor
-        prototype.SetOrigin
-        prototype.RestoreOrigin
     autoload/tlib/agent.vim
         tlib#agent#Exit ......................... |tlib#agent#Exit()|
         tlib#agent#CopyItems .................... |tlib#agent#CopyItems()|
@@ -178,6 +143,7 @@ Contents~
         tlib#buffer#InsertText .................. |tlib#buffer#InsertText()|
         tlib#buffer#InsertText0 ................. |tlib#buffer#InsertText0()|
         tlib#buffer#CurrentByte ................. |tlib#buffer#CurrentByte()|
+        tlib#buffer#KeepCursorPosition .......... |tlib#buffer#KeepCursorPosition()|
     autoload/tlib/cache.vim
         tlib#cache#Filename ..................... |tlib#cache#Filename()|
         tlib#cache#Save ......................... |tlib#cache#Save()|
@@ -218,12 +184,6 @@ Contents~
         tlib#input#Resume ....................... |tlib#input#Resume()|
         tlib#input#CommandSelect ................ |tlib#input#CommandSelect()|
         tlib#input#Edit ......................... |tlib#input#Edit()|
-        <c-w>c .................................. |<c-w>c|
-        i_<c-w>c ................................ |i_<c-w>c|
-        <c-s> ................................... |<c-s>|
-        i_<c-s> ................................. |i_<c-s>|
-        <c-w><cr> ............................... |<c-w><cr>|
-        i_<c-w><cr> ............................. |i_<c-w><cr>|
     autoload/tlib/list.vim
         tlib#list#Inject ........................ |tlib#list#Inject()|
         tlib#list#Compact ....................... |tlib#list#Compact()|
@@ -247,6 +207,7 @@ Contents~
         tlib#progressbar#Restore ................ |tlib#progressbar#Restore()|
     autoload/tlib/rx.vim
         tlib#rx#Escape .......................... |tlib#rx#Escape()|
+        tlib#rx#EscapeReplace ................... |tlib#rx#EscapeReplace()|
     autoload/tlib/scratch.vim
         tlib#scratch#UseScratch ................. |tlib#scratch#UseScratch()|
         tlib#scratch#CloseScratch ............... |tlib#scratch#CloseScratch()|
@@ -258,6 +219,7 @@ Contents~
         tlib#string#TrimLeft .................... |tlib#string#TrimLeft()|
         tlib#string#TrimRight ................... |tlib#string#TrimRight()|
         tlib#string#Strip ....................... |tlib#string#Strip()|
+        tlib#string#Count ....................... |tlib#string#Count()|
     autoload/tlib/syntax.vim
         tlib#syntax#Collect ..................... |tlib#syntax#Collect()|
         tlib#syntax#Names ....................... |tlib#syntax#Names()|
@@ -399,10 +361,10 @@ g:tlib_inputlist_filename_indicators (default: 0)
     disk when doing this.
 
                                                     *g:tlib_inputlist_match*
-g:tlib_inputlist_match         (default: 'strings')
-    Can be "strings" or "chars".
-      strings :: substrings
-      chars   :: match characters
+g:tlib_inputlist_match         (default: 'cnf')
+    Can be "cnf" or "fuzzy".
+      cnf   :: substrings
+      fuzzy :: match characters
 
                                                     *g:tlib_tags_extra*
 g:tlib_tags_extra              (default: '')
@@ -460,6 +422,48 @@ g:tlib_keyagents_InputList_m
 
                                                     *g:tlib_handlers_EditList*
 g:tlib_handlers_EditList
+
+
+========================================================================
+autoload/tlib/Filter_cnf.vim~
+
+                                                    *tlib#Filter_cnf#New()*
+tlib#Filter_cnf#New(...)
+    The search pattern for |tlib#input#List()| is in conjunctive normal 
+    form: (P1 OR P2 ...) AND (P3 OR P4 ...) ...
+    The pattern is a '/\V' very no-'/magic' regexp pattern.
+    
+    This is also the base class for other filters.
+
+
+========================================================================
+autoload/tlib/Filter_cnfd.vim~
+
+                                                    *tlib#Filter_cnfd#New()*
+tlib#Filter_cnfd#New(...)
+    The same as |tlib#FilterCNF#New()| but a dot is expanded to '\.\{-}'. 
+    As a consequence, patterns cannot match dots.
+    The pattern is a '/\V' very no-'/magic' regexp pattern.
+
+
+========================================================================
+autoload/tlib/Filter_fuzzy.vim~
+
+                                                    *tlib#Filter_fuzzy#New()*
+tlib#Filter_fuzzy#New(...)
+    Support for "fuzzy" pattern matching in |tlib#input#List()|. 
+    Characters are interpreted as if connected with '.\{-}'.
+
+
+========================================================================
+autoload/tlib/Filter_seq.vim~
+
+                                                    *tlib#Filter_seq#New()*
+tlib#Filter_seq#New(...)
+    The search pattern for |tlib#input#List()| is interpreted as a 
+    disjunction of 'magic' regular expressions with the exception of a dot 
+    ".", which is interpreted as ".\{-}".
+    The pattern is a '/magic' regexp pattern.
 
 
 ========================================================================
@@ -543,135 +547,6 @@ Inherits from |tlib#Object#New|.
 tlib#World#New(...)
 
 
-prototype.Set_display_format
-
-
-prototype.Set_highlight_filename
-
-
-prototype.Highlight_filename
-
-
-prototype.FormatFilename
-
-
-prototype.GetSelectedItems
-
-
-prototype.SelectItem
-
-
-prototype.FormatArgs
-
-
-prototype.GetRx
-
-
-prototype.GetRx0
-
-
-prototype.FormatName
-
-
-prototype.GetItem
-
-
-prototype.GetListIdx
-
-
-prototype.GetBaseIdx
-
-
-prototype.GetBaseItem
-
-
-prototype.SetBaseItem
-
-
-prototype.GetCurrentItem
-
-
-prototype.CurrentItem
-
-
-prototype.SetFilter
-
-
-prototype.IsValidFilter
-
-
-prototype.SetMatchMode
-
-
-prototype.Match
-
-
-prototype.MatchBaseIdx
-
-
-prototype.BuildTable
-
-
-prototype.ReduceFilter
-
-
-prototype.SetInitialFilter
-
-
-prototype.PopFilter
-
-
-prototype.FilterIsEmpty
-
-
-prototype.DisplayFilter
-
-
-prototype.UseScratch
-
-
-prototype.CloseScratch
-
-
-prototype.UseInputListScratch
-
-
-prototype.Reset
-
-
-prototype.ResetSelected
-
-
-prototype.Retrieve
-
-
-prototype.DisplayHelp
-
-
-prototype.Resize
-
-
-prototype.DisplayList
-
-
-prototype.SetOffset
-
-
-prototype.DisplayListMark
-
-
-prototype.SwitchWindow
-
-
-prototype.FollowCursor
-
-
-prototype.SetOrigin
-
-
-prototype.RestoreOrigin
-
-
 ========================================================================
 autoload/tlib/agent.vim~
 Various agents for use as key handlers in tlib#input#List()
@@ -721,7 +596,9 @@ tlib#agent#SuspendToParentWindow(world, selected)
 tlib#agent#Suspend(world, selected)
     Suspend lets you temporarily leave the input loop of 
     |tlib#input#List|. You can resume editing the list by pressing <c-z>, 
-    <m-z>. <cr>, <space>, or <LeftMouse> in the suspended window.
+    <m-z>. <space>, <c-LeftMouse> or <MiddleMouse> in the suspended window.
+    <cr> and <LeftMouse> will immediatly select the item under the cursor.
+<    will select the item but the window will remain opened.
 
                                                     *tlib#agent#Help()*
 tlib#agent#Help(world, selected)
@@ -918,6 +795,10 @@ tlib#buffer#InsertText0(text, ...)
                                                     *tlib#buffer#CurrentByte()*
 tlib#buffer#CurrentByte()
 
+                                                    *tlib#buffer#KeepCursorPosition()*
+tlib#buffer#KeepCursorPosition(cmd)
+    Evaluate cmd while maintaining the cursor position and jump registers.
+
 
 ========================================================================
 autoload/tlib/cache.vim~
@@ -1085,6 +966,12 @@ tlib#input#List(type. ?query='', ?list=[], ?handlers=[], ?default="", ?timeout=0
         m  ... Return a list of selcted elements
         mi ... Return a list of indexes
     
+    Several pattern matching styles are supported. See:
+      - |tlib#Filter_cnf#New()|
+      - |tlib#Filter_cnfd#New()|
+      - |tlib#Filter_fuzzy#New()|
+      - |tlib#Filter_seq#New()|
+    
     EXAMPLES: >
       echo tlib#input#List('s', 'Select one item', [100,200,300])
       echo tlib#input#List('si', 'Select one item', [100,200,300])
@@ -1112,7 +999,7 @@ tlib#input#EditList(query, list, ?timeout=0)
 <
 
                                                     *tlib#input#Resume()*
-tlib#input#Resume(name)
+tlib#input#Resume(name, pick)
 
                                                     *tlib#input#CommandSelect()*
 tlib#input#CommandSelect(command, ?keyargs={})
@@ -1140,25 +1027,6 @@ tlib#input#Edit(name, value, callback, ?cb_args=[])
       endf
       call tlib#input#Edit('foo', b:var, 'FooContinue')
 <
-
-                                                    *<c-w>c*
-<c-w>c ... :call <SID>EditCallback(0)<cr>
-    TLogVAR a:value
-
-                                                    *i_<c-w>c*
-i_<c-w>c ... <c-o>call <SID>EditCallback(0)<cr>
-
-                                                    *<c-s>*
-<c-s> ... :call <SID>EditCallback(1)<cr>
-
-                                                    *i_<c-s>*
-i_<c-s> ... <c-o>call <SID>EditCallback(1)<cr>
-
-                                                    *<c-w><cr>*
-<c-w><cr> ... :call <SID>EditCallback(1)<cr>
-
-                                                    *i_<c-w><cr>*
-i_<c-w><cr> ... <c-o>call <SID>EditCallback(1)<cr>
 
 
 ========================================================================
@@ -1299,6 +1167,10 @@ tlib#rx#Escape(text, ?magic='m')
     magic can be one of: m, M, v, V
     See :help 'magic'
 
+                                                    *tlib#rx#EscapeReplace()*
+tlib#rx#EscapeReplace(text, ?magic='m')
+    Escape return |sub-replace-special|.
+
 
 ========================================================================
 autoload/tlib/scratch.vim~
@@ -1343,6 +1215,9 @@ tlib#string#TrimRight(string)
 
                                                     *tlib#string#Strip()*
 tlib#string#Strip(string)
+
+                                                    *tlib#string#Count()*
+tlib#string#Count(string, rx)
 
 
 ========================================================================

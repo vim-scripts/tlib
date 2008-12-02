@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-10-03.
-" @Revision:    0.0.95
+" @Last Change: 2008-11-23.
+" @Revision:    0.0.108
 
 if &cp || exists("loaded_tlib_string_autoload")
     finish
@@ -143,4 +143,14 @@ function! tlib#string#Strip(string) "{{{3
     return tlib#string#TrimRight(tlib#string#TrimLeft(a:string))
 endf
 
+
+function! tlib#string#Count(string, rx) "{{{3
+    let s:count = 0
+    call substitute(a:string, a:rx, '\=s:CountHelper()', 'g')
+    return s:count
+endf
+
+function! s:CountHelper() "{{{3
+    let s:count += 1
+endf
 

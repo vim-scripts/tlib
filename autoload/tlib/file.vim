@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-12-01.
-" @Revision:    0.0.58
+" @Last Change: 2008-12-24.
+" @Revision:    0.0.61
 
 if &cp || exists("loaded_tlib_file_autoload")
     finish
@@ -117,5 +117,4 @@ function! tlib#file#With(fcmd, bcmd, files, ...) "{{{3
         endif
     endfor
 endf
-
 

@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-07-20.
-" @Last Change: 2008-12-01.
-" @Revision:    0.0.17
+" @Last Change: 2008-12-26.
+" @Revision:    0.0.24
 
 if &cp || exists("loaded_tlib_rx_autoload")
     finish
@@ -44,6 +44,20 @@ function! tlib#rx#EscapeReplace(text, ...) "{{{3
         return a:text
     else
         echoerr 'magic must be one of: m, v, M, V'
+    endif
+endf
+
+
+function! tlib#rx#Suffixes(...) "{{{3
+    TVarArg ['magic', 'm']
+    let sfx = split(&suffixes, ',')
+    call map(sfx, 'tlib#rx#Escape(v:val, magic)')
+    if magic ==# 'v'
+        return '('. join(sfx, '|') .')$'
+    elseif magic ==# 'V'
+        return '\('. join(sfx, '\|') .'\)\$'
+    else
+        return '\('. join(sfx, '\|') .'\)$'
     endif
 endf
 

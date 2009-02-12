@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2008-12-01.
-" @Revision:    521
+" @Last Change: 2009-02-12.
+" @Revision:    525
 " GetLatestVimScripts: 1863 1 tlib.vim
 "
 " Please see also ../test/tlib.vim for usage examples.
@@ -29,7 +29,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 28
+let loaded_tlib = 29
 let s:save_cpo = &cpo
 set cpo&vim
 
@@ -496,4 +496,9 @@ to "cnf", "cnfd", "seq" and "fuzzy"
 - NEW: tlib#buffer#KeepCursorPosition()
 - tlib#buffer#InsertText(): Take care of the extra line when appending 
 text to an empty buffer.
+
+0.29
+- tlib#string#Strip(): Strip also control characters (newlines etc.)
+- tlib#rx#Suffixes(): 'suffixes' as Regexp
+- World#RestoreOrigin(): Don't assume &splitbelow
 

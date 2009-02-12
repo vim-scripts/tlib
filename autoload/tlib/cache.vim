@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2007-11-01.
-" @Revision:    0.1.28
+" @Last Change: 2008-12-20.
+" @Revision:    0.1.29
 
 if &cp || exists("loaded_tlib_cache_autoload")
     finish
@@ -15,7 +15,7 @@ let loaded_tlib_cache_autoload = 1
 " :def: function! tlib#cache#Filename(type, ?file=%, ?mkdir=0)
 function! tlib#cache#Filename(type, ...) "{{{3
     " TLogDBG 'bufname='. bufname('.')
-    let dir = tlib#var#Get('tlib_cache', 'wbg')
+    let dir = tlib#var#Get('tlib_cache', 'bg')
     if empty(dir)
         let dir = tlib#file#Join([tlib#dir#MyRuntime(), 'cache'])
     endif

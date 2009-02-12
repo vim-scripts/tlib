@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-11-23.
-" @Revision:    0.0.108
+" @Last Change: 2008-12-20.
+" @Revision:    0.0.109
 
 if &cp || exists("loaded_tlib_string_autoload")
     finish
@@ -130,12 +130,12 @@ endf
 
 
 function! tlib#string#TrimLeft(string) "{{{3
-    return substitute(a:string, '^\s\+', '', '')
+    return substitute(a:string, '^[[:space:][:cntrl:]]\+', '', '')
 endf
 
 
 function! tlib#string#TrimRight(string) "{{{3
-    return substitute(a:string, '\s\+$', '', '')
+    return substitute(a:string, '[[:space:][:cntrl:]]\+$', '', '')
 endf
 
 

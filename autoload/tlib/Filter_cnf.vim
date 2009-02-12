@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2008-11-25.
-" @Last Change: 2008-11-30.
-" @Revision:    0.0.53
+" @Last Change: 2008-12-26.
+" @Revision:    0.0.56
 
 let s:save_cpo = &cpo
 set cpo&vim
@@ -61,6 +61,7 @@ endf
 
 " :nodoc:
 function! s:prototype.Match(world, text) dict "{{{3
+    " TLogVAR a:text
     " let sc = &smartcase
     " let ic = &ignorecase
     " if &ignorecase

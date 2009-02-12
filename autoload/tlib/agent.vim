@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-24.
-" @Last Change: 2008-11-30.
-" @Revision:    0.1.165
+" @Last Change: 2008-12-19.
+" @Revision:    0.1.166
 
 if &cp || exists("loaded_tlib_agent_autoload") "{{{2
     finish
@@ -433,7 +433,7 @@ function! tlib#agent#PreviewLine(world, selected) "{{{3
     let l = a:selected[0]
     let ww = winnr()
     exec a:world.win_wnr .'wincmd w'
-    call tlib#buffer#ViewLine(l)
+    call tlib#buffer#ViewLine(l, 1)
     exec ww .'wincmd w'
     let a:world.state = 'redisplay'
     return a:world
@@ -462,7 +462,7 @@ function! tlib#agent#GotoLine(world, selected) "{{{3
             let world = tlib#agent#Suspend(a:world, a:selected)
             exec a:world.win_wnr .'wincmd w'
         endif
-        call tlib#buffer#ViewLine(l)
+        call tlib#buffer#ViewLine(l, 1)
         
     endif
     return a:world

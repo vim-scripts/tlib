@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-12-01.
-" @Revision:    0.0.260
+" @Last Change: 2008-12-19.
+" @Revision:    0.0.267
 
 if &cp || exists("loaded_tlib_buffer_autoload")
     finish
@@ -171,13 +171,16 @@ function! tlib#buffer#ViewLine(line, ...) "{{{3
         if !empty(pos)
             exec 'norm! '. pos
         endif
-        let @/ = '\%'. ln .'l.*'
+        call tlib#buffer#HighlightLine(ln)
+        " let @/ = '\%'. ln .'l.*'
     endif
 endf
 
 
 function! tlib#buffer#HighlightLine(line) "{{{3
-    exec 'match MatchParen /\V\%'. a:line .'l.*/'
+    " exec '3match MatchParen /^\%'. a:line .'l.*/'
+    exec '3match Search /^\%'. a:line .'l.*/'
+    autocmd TLib CursorHold,CursorHoldI,CursorMoved,CursorMovedI * 3match none
 endf
 
 

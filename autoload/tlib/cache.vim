@@ -1,10 +1,10 @@
 " cache.vim
-" @Author:      Thomas Link (micathom AT gmail com?subject=[vim])
+" @Author:      Tom Link (micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2008-12-20.
-" @Revision:    0.1.29
+" @Last Change: 2009-02-15.
+" @Revision:    0.1.32
 
 if &cp || exists("loaded_tlib_cache_autoload")
     finish
@@ -53,6 +53,7 @@ endf
 
 function! tlib#cache#Save(cfile, dictionary) "{{{3
     if !empty(a:cfile)
+        " TLogVAR a:dictionary
         call writefile([string(a:dictionary)], a:cfile, 'b')
     endif
 endf

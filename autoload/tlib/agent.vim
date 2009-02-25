@@ -1,10 +1,10 @@
 " agent.vim
-" @Author:      Thomas Link (micathom AT gmail com?subject=[vim])
+" @Author:      Tom Link (micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-24.
-" @Last Change: 2008-12-19.
-" @Revision:    0.1.166
+" @Last Change: 2009-02-25.
+" @Revision:    0.1.168
 
 if &cp || exists("loaded_tlib_agent_autoload") "{{{2
     finish
@@ -297,6 +297,7 @@ function! tlib#agent#EditItem(world, selected) "{{{3
 endf
 
 
+" Insert a new item below the current one.
 function! tlib#agent#NewItem(world, selected) "{{{3
     let basepi = a:world.GetBaseIdx(a:world.prefidx)
     let item = input('New item: ')

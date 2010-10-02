@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2010-09-05.
-" @Revision:    0.1.871
+" @Last Change: 2010-09-22.
+" @Revision:    0.1.886
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -451,6 +451,7 @@ function! s:prototype.SetMatchMode(match_mode) dict "{{{3
         unlet self.matcher
         try
             let self.matcher = tlib#Filter_{a:match_mode}#New()
+            call self.matcher.Init(self)
         catch /^Vim\%((\a\+)\)\=:E117/
             throw 'tlib: Unknown mode for tlib_inputlist_match: '. a:match_mode
         endtry
@@ -797,11 +798,11 @@ function! s:prototype.DisplayList(query, ...) dict "{{{3
         call self.ScrollToOffset()
         let rx0 = self.GetRx0()
         " TLogVAR rx0
-        if !empty(g:tlib_inputlist_higroup)
+        if !empty(self.matcher.highlight)
             if empty(rx0)
                 match none
             elseif self.IsValidFilter()
-                exec 'match '. g:tlib_inputlist_higroup .' /\c'. escape(rx0, '/') .'/'
+                exec 'match '. self.matcher.highlight .' /\c'. escape(rx0, '/') .'/'
             endif
         endif
     endif

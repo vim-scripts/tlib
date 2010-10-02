@@ -4,8 +4,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2010-09-05.
-" @Revision:    0.0.788
+" @Last Change: 2010-09-26.
+" @Revision:    0.0.807
 
 
 " :filedoc:
@@ -258,6 +258,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                             " TLogDBG len(world.list)
                             " TLogVAR world.list
                             let dlist = copy(world.list)
+                            " TLogVAR world.display_format
                             if !empty(world.display_format)
                                 let display_format = world.display_format
                                 let cache = world.fmt_display
@@ -687,7 +688,7 @@ endf
 function! tlib#input#Edit(name, value, callback, ...) "{{{3
     " TLogVAR a:value
     TVarArg ['args', []]
-    let sargs = {'scratch': '__EDIT__'. a:name .'__'}
+    let sargs = {'scratch': '__EDIT__'. a:name .'__', 'win_wnr': winnr()}
     let scr = tlib#scratch#UseScratch(sargs)
 
     " :nodoc:
@@ -704,7 +705,6 @@ function! tlib#input#Edit(name, value, callback, ...) "{{{3
     imap <buffer> <c-w><cr> <c-o>call <SID>EditCallback(1)<cr>
     
     call tlib#normal#WithRegister('gg"tdG', 't')
-    norm
     call append(1, split(a:value, "\<c-j>", 1))
     " let hrm = 'DON''T DELETE THIS HEADER'
     " let hr3 = repeat('"', (tlib#win#Width(0) - len(hrm)) / 2)
@@ -743,7 +743,10 @@ function! s:EditCallback(...) "{{{3
     let text = ok ? join(getline(start, '$'), "\n") : ''
     let cb   = b:tlib_scratch_edit_callback
     let args = b:tlib_scratch_edit_args
+    let sargs = b:tlib_scratch_edit_scratch
+    " TLogVAR cb, args, sargs
     call tlib#scratch#CloseScratch(b:tlib_scratch_edit_scratch)
+    call tlib#win#Set(sargs.win_wnr)
     call call(cb, args + [ok, text])
 endf
 

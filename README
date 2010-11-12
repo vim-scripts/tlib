@@ -64,3 +64,6 @@ Related (small) plugins that utilize tlib and thus provide some degree of unifor
 
 For full details, please see: 
 http://github.com/tomtom/tlib_vim/blob/master/doc/tlib.txt
+
+Also available via git
+http://github.com/tomtom/tlib_vim

@@ -13,6 +13,7 @@ tlib#input#List(), tlib#input#ListW()
     - Do stuff
         - Developers can define keys that trigger some action with the 
           selected items
+    - Demo: http://vimsomnia.blogspot.com/2010/11/selecting-items-from-list-with-tlibs.html
 
 tlib#input#EditList
     + Edit a list (copy, cut, paste, delete, edit ...)
@@ -50,16 +51,18 @@ TBrowseOutput COMMAND
 
 Related (small) plugins that utilize tlib and thus provide some degree of uniform user experience:
     tbibtools (vimscript #1915): bibtex-related utilities (sort, reformat, list contents ...)
+    tmarks (vimscript #2594): Browse, place, & delete marks
     tmboxbrowser (vimscript #1906): A mbox browser -- Read your e-mails with vim
     tmru (vimscript #1864): Most Recently Used Files
     trag (vimscript #2033): A slightly language-aware alternative to grep
     tregisters (vimscript #2017): List, edit, and run/execute registers/clipboards
     tselectbuffer (vimscript #1866): A quick buffer selector/switcher
-    tselectfile (vimscript #1865): A quick file selector/browser/explorer (sort of)
+    tselectfiles (vimscript #1865): A quick file selector/browser/explorer (sort of)
     ttagecho (vimscript #2055): Show current tag information
     ttagcomplete (vimscript #2069): Context-sensitive tags-based completion and code skeletons
     ttags (vimscript #2018): Tag list browser (List, filter, preview, jump to tags)
     ttoc (vimscript #2014): A regexp-based table of contents of the current buffer
+    vikitasks (vimscript #2894): Search viki files for tasks and display them in a list
 
 
 For full details, please see: 

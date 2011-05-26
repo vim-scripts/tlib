@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2010-10-31.
-" @Revision:    0.0.812
+" @Last Change: 2011-03-31.
+" @Revision:    0.0.840
 
 
 " :filedoc:
@@ -32,7 +32,7 @@
 " type can be:
 "     s  ... Return one selected element
 "     si ... Return the index of the selected element
-"     m  ... Return a list of selcted elements
+"     m  ... Return a list of selected elements
 "     mi ... Return a list of indexes
 "
 " Several pattern matching styles are supported. See 
@@ -82,6 +82,7 @@ function! tlib#input#List(type, ...) "{{{3
         let world.post_handlers    = filter(copy(handlers),   'has_key(v:val, "postprocess")')
         let world.filter_format    = tlib#list#Find(handlers, 'has_key(v:val, "filter_format")', '', 'v:val.filter_format')
         let world.return_agent     = tlib#list#Find(handlers, 'has_key(v:val, "return_agent")', '', 'v:val.return_agent')
+        let world.help_extra       = tlib#list#Find(handlers, 'has_key(v:val, "help_extra")', '', 'v:val.help_extra')
         let world.resize           = tlib#list#Find(handlers, 'has_key(v:val, "resize")', '', 'v:val.resize')
         let world.show_empty       = tlib#list#Find(handlers, 'has_key(v:val, "show_empty")', 0, 'v:val.show_empty')
         let world.pick_last_item   = tlib#list#Find(handlers, 'has_key(v:val, "pick_last_item")', 
@@ -109,11 +110,14 @@ endf
 
 
 " :def: function! tlib#input#ListW(world, ?command='')
-" The second argument, command is meant for internal use only.
+" The second argument (command) is meant for internal use only.
 " The same as |tlib#input#List| but the arguments are packed into world 
 " (an instance of tlib#World as returned by |tlib#World#New|).
 function! tlib#input#ListW(world, ...) "{{{3
     TVarArg 'cmd'
+    if a:world.pick_last_item >= 1 && stridx(a:world.type, 'e') == -1 && len(a:world.base) <= 1
+        return get(a:world.base, 0, a:world.rv)
+    endif
     let world = a:world
     let world.filetype = &filetype
     let world.fileencoding = &fileencoding
@@ -227,7 +231,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                             else
                                 if world.llen == 1
                                     let world.last_item = world.list[0]
-                                    if world.pick_last_item
+                                    if world.pick_last_item >= 2
                                         " echom 'Pick last item: '. world.list[0]
                                         let world.prefidx = '1'
                                         " TLogDBG 'pick last item'
@@ -516,6 +520,8 @@ function! tlib#input#ListW(world, ...) "{{{3
         endif
 
     finally
+        call world.Leave()
+
         " TLogVAR statusline
         " let &l:statusline = statusline
         " let &laststatus = laststatus
@@ -530,16 +536,18 @@ function! tlib#input#ListW(world, ...) "{{{3
         " TLogDBG string(tlib#win#List())
         if world.state !~ '\<suspend\>'
             " redraw
-            " TLogVAR world.sticky
+            " TLogVAR world.sticky, bufnr("%")
             if world.sticky
                 " TLogDBG "sticky"
                 " TLogVAR world.bufnr
                 " TLogDBG bufwinnr(world.bufnr)
-                if bufwinnr(world.bufnr) == -1
-                    " TLogDBG "UseScratch"
-                    call world.UseScratch()
+                if world.scratch_split > 0
+                    if bufwinnr(world.bufnr) == -1
+                        " TLogDBG "UseScratch"
+                        call world.UseScratch()
+                    endif
+                    let world = tlib#agent#SuspendToParentWindow(world, world.GetSelectedItems(world.rv))
                 endif
-                let world = tlib#agent#SuspendToParentWindow(world, world.GetSelectedItems(world.rv))
             else
                 " TLogDBG "non sticky"
                 " TLogVAR world.state, world.win_wnr, world.bufnr
@@ -574,9 +582,7 @@ function! s:Init(world, cmd) "{{{3
         endif
     elseif !a:world.initialized
         " TLogVAR a:world.initialized, a:world.win_wnr, a:world.bufnr
-        let a:world.initialized = 1
-        call a:world.SetOrigin(1)
-        call a:world.Reset(1)
+        call a:world.Initialize()
         if !empty(a:cmd)
             let a:world.state .= ' '. a:cmd
         endif
@@ -605,7 +611,7 @@ function! tlib#input#EditList(query, list, ...) "{{{3
     let default  = a:0 >= 2 ? a:2 : []
     let timeout  = a:0 >= 3 ? a:3 : 0
     " TLogVAR handlers
-    let rv = tlib#input#List('m', a:query, copy(a:list), handlers, default, timeout)
+    let rv = tlib#input#List('me', a:query, copy(a:list), handlers, default, timeout)
     " TLogVAR rv
     if empty(rv)
         return a:list

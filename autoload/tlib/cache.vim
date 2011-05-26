@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2010-08-10.
-" @Revision:    0.1.165
+" @Last Change: 2011-03-10.
+" @Revision:    0.1.182
 
 
 " |tlib#cache#Purge()|: Remove cache files older than N days.
@@ -31,7 +31,7 @@ TLet g:tlib#cache#dont_purge = ['[\/]\.last_purge$']
 
 
 " :display: tlib#cache#Dir(?mode = 'bg')
-" The default cache directory
+" The default cache directory.
 function! tlib#cache#Dir(...) "{{{3
     TVarArg ['mode', 'bg']
     let dir = tlib#var#Get('tlib_cache', mode)
@@ -70,7 +70,15 @@ function! tlib#cache#Filename(type, ...) "{{{3
     let file  = fnamemodify(file, ':t')
     " TLogVAR file, dir, mkdir
     if mkdir && !isdirectory(dir)
-        call mkdir(dir, 'p')
+        try
+            call mkdir(dir, 'p')
+        catch /^Vim\%((\a\+)\)\=:E739:/
+            if filereadable(dir) && !isdirectory(dir)
+                echoerr 'TLib: Cannot create directory for cache file because a file with the same name exists (please delete it):' dir
+                " call delete(dir)
+                " call mkdir(dir, 'p')
+            endif
+        endtry
     endif
     let cache_file = tlib#file#Join([dir, file])
     " TLogVAR cache_file
@@ -110,14 +118,14 @@ endf
             let threshold = localtime() - g:tlib#cache#purge_every_days * g:tlib#date#dayshift
             let should_purge = getftime(last_purge) < threshold
         else
-            let should_purge = !empty(glob(tlib#file#Join([dir, '**'])))
+            let should_purge = 0 " should ignore empty dirs, like the tmru one: !empty(glob(tlib#file#Join([dir, '**'])))
         endif
         if should_purge
             if last_purge_exists
                 let yn = 'y'
             else
                 let txt = "TLib: The cache directory '". dir ."' should be purged of old files.\nDelete files older than ". g:tlib#cache#purge_days ." days now?"
-                let yn = tlib#input#Dialog(txt, ['yes', 'no', 'edit'], 'no')
+                let yn = tlib#input#Dialog(txt, ['yes', 'no'], 'no')
             endif
             if yn =~ '^y\%[es]$'
                 call tlib#cache#Purge()

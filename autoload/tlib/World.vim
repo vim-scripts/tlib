@@ -3,20 +3,23 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2010-10-31.
-" @Revision:    0.1.887
+" @Last Change: 2011-04-01.
+" @Revision:    0.1.915
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
 " Inherits from |tlib#Object#New|.
 
 
+" Known keys & values:
+"   scratch_split ... See |tlib#scratch#UseScratch()|
 let s:prototype = tlib#Object#New({
             \ '_class': 'World',
             \ 'name': 'world',
             \ 'allow_suspend': 1,
             \ 'base': [], 
             \ 'bufnr': -1,
+            \ 'cache_var': '',
             \ 'display_format': '',
             \ 'fileencoding': &fileencoding,
             \ 'fmt_display': {},
@@ -27,6 +30,7 @@ let s:prototype = tlib#Object#New({
             \ 'filter_options': '',
             \ 'follow_cursor': '',
             \ 'has_menu': 0,
+            \ 'help_extra': [],
             \ 'index_table': [],
             \ 'initial_filter': [['']],
             \ 'initial_index': 1,
@@ -39,17 +43,20 @@ let s:prototype = tlib#Object#New({
             \ 'numeric_chars': tlib#var#Get('tlib_numeric_chars', 'bg'),
             \ 'offset': 1,
             \ 'offset_horizontal': 0,
+            \ 'on_leave': [],
             \ 'pick_last_item': tlib#var#Get('tlib_pick_last_item', 'bg'),
             \ 'post_handlers': [],
             \ 'query': '',
             \ 'resize': 0,
             \ 'resize_vertical': 0,
+            \ 'restore_from_cache': [],
             \ 'retrieve_eval': '',
             \ 'return_agent': '',
             \ 'rv': '',
             \ 'scratch': '__InputList__',
             \ 'scratch_filetype': 'tlibInputList',
             \ 'scratch_vertical': 0,
+            \ 'scratch_split': 1,
             \ 'sel_idx': [],
             \ 'show_empty': 0,
             \ 'state': 'display', 
@@ -589,6 +596,31 @@ endf
 
 
 " :nodoc:
+function! s:prototype.Initialize() dict "{{{3
+    let self.initialized = 1
+    call self.SetOrigin(1)
+    call self.Reset(1)
+    if !empty(self.cache_var) && exists(self.cache_var)
+        for prop in self.restore_from_cache
+            exec 'let self[prop] = get('. self.cache_var .', prop, self[prop])'
+        endfor
+        exec 'unlet '. self.cache_var
+    endif
+endf
+
+
+" :nodoc:
+function! s:prototype.Leave() dict "{{{3
+    if !empty(self.cache_var)
+        exec 'let '. self.cache_var .' = self'
+    endif
+    for handler in self.on_leave
+        call call(handler, [self])
+    endfor
+endf
+
+
+" :nodoc:
 function! s:prototype.UseInputListScratch() dict "{{{3
     let scratch = self.UseScratch()
     " TLogVAR scratch
@@ -660,7 +692,7 @@ function! s:prototype.DisplayHelp() dict "{{{3
     " \ 'Help:',
     let help = [
                 \ 'Mouse        ... Pick an item            Letter          ... Filter the list',
-                \ printf('Number       ... Pick an item            "%s", "%s", %sWORD ... AND, OR, NOT',
+                \ printf('<m-Number>   ... Pick an item            "%s", "%s", %sWORD ... AND, OR, NOT',
                 \   g:tlib_inputlist_and, g:tlib_inputlist_or, g:tlib_inputlist_not),
                 \ 'Enter        ... Pick the current item   <bs>, <c-bs>    ... Reduce filter',
                 \ '<c|m-r>      ... Reset the display       Up/Down         ... Next/previous item',
@@ -688,6 +720,9 @@ function! s:prototype.DisplayHelp() dict "{{{3
             call add(help, printf('%-12s ... %s', key, desc))
         endif
     endfor
+    if !empty(self.help_extra)
+        let help += self.help_extra
+    endif
     let help += [
                 \ '',
                 \ 'Exact matches and matches at word boundaries is given more weight.',
@@ -709,17 +744,21 @@ endf
 function! s:prototype.Resize(hsize, vsize) dict "{{{3
     " TLogVAR self.scratch_vertical, a:hsize, a:vsize
     let world_resize = ''
-    if self.scratch_vertical
-        if a:vsize
-            let world_resize = 'vert resize '. a:vsize
-            " let w:winresize = {'v': a:vsize}
-            setlocal winfixwidth
-        endif
-    else
-        if a:hsize
-            let world_resize = 'resize '. a:hsize
-            " let w:winresize = {'h': a:hsize}
-            setlocal winfixheight
+    let scratch_split = get(self, 'scratch_split', 1)
+    " TLogVAR scratch_split
+    if scratch_split > 0
+        if self.scratch_vertical
+            if a:vsize
+                let world_resize = 'vert resize '. a:vsize
+                " let w:winresize = {'v': a:vsize}
+                setlocal winfixwidth
+            endif
+        else
+            if a:hsize
+                let world_resize = 'resize '. a:hsize
+                " let w:winresize = {'h': a:hsize}
+                setlocal winfixheight
+            endif
         endif
     endif
     if !empty(world_resize)
@@ -928,6 +967,7 @@ function! s:prototype.SetOrigin(...) dict "{{{3
     let self.win_width = winwidth(self.win_wnr)
     " TLogVAR self.win_wnr, self.win_height, self.win_width
     let self.bufnr   = bufnr('%')
+    let self.tabpagenr = tabpagenr()
     let self.cursor  = getpos('.')
     if winview
         let self.winview = tlib#win#GetLayout()

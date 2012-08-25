@@ -3,12 +3,19 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-06-30.
-" @Last Change: 2011-03-31.
-" @Revision:    0.0.840
+" @Last Change: 2012-07-15.
+" @Revision:    0.0.883
 
 
 " :filedoc:
 " Input-related, select from a list etc.
+
+
+if !exists('g:tlib#input#use_popup')
+    " If true, define a popup menu for |tlib#input#List()| and related 
+    " functions.
+    let g:tlib#input#use_popup = has('menu') && (has('gui_gtk') || has('gui_gtk2') || has('gui_win32'))
+endif
 
 
 " Functions related to tlib#input#List(type, ...) "{{{2
@@ -116,7 +123,12 @@ endf
 function! tlib#input#ListW(world, ...) "{{{3
     TVarArg 'cmd'
     if a:world.pick_last_item >= 1 && stridx(a:world.type, 'e') == -1 && len(a:world.base) <= 1
-        return get(a:world.base, 0, a:world.rv)
+        let rv = get(a:world.base, 0, a:world.rv)
+        if stridx(a:world.type, 'm') != -1
+            return [rv]
+        else
+            return rv
+        endif
     endif
     let world = a:world
     let world.filetype = &filetype
@@ -128,7 +140,7 @@ function! tlib#input#ListW(world, ...) "{{{3
     if stridx(world.type, 'm') != -1
         call extend(key_agents, g:tlib_keyagents_InputList_m, 'force')
     endif
-    if has('menu')
+    if g:tlib#input#use_popup
         amenu ]TLibInputListPopupMenu.Pick\ selected\ item <cr>
         amenu ]TLibInputListPopupMenu.Select #
         amenu ]TLibInputListPopupMenu.Select\ all <c-a>
@@ -140,7 +152,7 @@ function! tlib#input#ListW(world, ...) "{{{3
         let k = get(handler, 'key', '')
         if !empty(k)
             let key_agents[k] = handler.agent
-            if has('menu') && has_key(handler, 'help') && !empty(handler.help)
+            if g:tlib#input#use_popup && has_key(handler, 'help') && !empty(handler.help)
                 exec 'amenu ]TLibInputListPopupMenu.'. escape(handler.help, ' .\')
                             \ .' '. handler.key_name
                 let world.has_menu = 1
@@ -150,6 +162,8 @@ function! tlib#input#ListW(world, ...) "{{{3
     " let statusline  = &l:statusline
     " let laststatus  = &laststatus
     let lastsearch  = @/
+    let scrolloff = &l:scrolloff
+    let &l:scrolloff = 0
     let @/ = ''
     let dlist = []
     " let &laststatus = 2
@@ -282,7 +296,12 @@ function! tlib#input#ListW(world, ...) "{{{3
                             let dlist = ['Malformed filter']
 
                         endif
+                    else
+                        if world.prefidx == 0
+                            let world.prefidx = 1
+                        endif
                     endif
+                    " TLogVAR world.idx, world.prefidx
 
                     " TLogDBG 7
                     " TLogVAR world.prefidx, world.offset
@@ -371,7 +390,7 @@ function! tlib#input#ListW(world, ...) "{{{3
                     endif
                     throw 'pick'
                 elseif c == "\<RightMouse>"
-                    if has('menu')
+                    if g:tlib#input#use_popup
                         " if v:mouse_lnum != line('.')
                         " endif
                         let world.prefidx = world.GetLineIdx(v:mouse_lnum)
@@ -526,7 +545,8 @@ function! tlib#input#ListW(world, ...) "{{{3
         " let &l:statusline = statusline
         " let &laststatus = laststatus
         silent! let @/  = lastsearch
-        if has('menu') && world.has_menu
+        let &l:scrolloff = scrolloff
+        if g:tlib#input#use_popup && world.has_menu
             silent! aunmenu ]TLibInputListPopupMenu
         endif
 
@@ -622,26 +642,43 @@ function! tlib#input#EditList(query, list, ...) "{{{3
 endf
 
 
-function! tlib#input#Resume(name, pick) "{{{3
+function! tlib#input#Resume(name, pick, bufnr) "{{{3
+    " TLogVAR a:name, a:pick
     echo
-    if exists('b:tlib_suspend')
-        for [m, pick] in items(b:tlib_suspend)
-            exec 'unmap <buffer> '. m
-        endfor
-        unlet b:tlib_suspend
+    if bufnr('%') != a:bufnr
+        if g:tlib_debug
+            echohl WarningMsg
+            echom "tlib#input#Resume: Internal error: Not in scratch buffer:" bufname('%')
+            echohl NONE
+        endif
+        let br = tlib#buffer#Set(a:bufnr)
     endif
-    call tlib#autocmdgroup#Init()
-    autocmd! TLib InsertEnter,InsertChange <buffer>
-    let b:tlib_{a:name}.state = 'display'
-    " call tlib#input#List('resume '. a:name)
-    let cmd = 'resume '. a:name
-    if a:pick >= 1
-        let cmd .= ' pick'
-        if a:pick >= 2
-            let cmd .= ' sticky'
-        end
+    if !exists('b:tlib_'. a:name)
+        if g:tlib_debug
+            echohl WarningMsg
+            echom "tlib#input#Resume: Internal error: b:tlib_". a:name ." does not exist:" bufname('%')
+            echohl NONE
+            redir => varss
+            silent let b:
+            redir END
+            let vars = split(varss, '\n')
+            call filter(vars, 'v:val =~ "^b:tlib_"')
+            echom "DEBUG tlib#input#Resume" string(vars)
+        endif
+    else
+        call tlib#autocmdgroup#Init()
+        autocmd! TLib BufEnter <buffer>
+        let b:tlib_{a:name}.state = 'redisplay'
+        " call tlib#input#List('resume '. a:name)
+        let cmd = 'resume '. a:name
+        if a:pick >= 1
+            let cmd .= ' pick'
+            if a:pick >= 2
+                let cmd .= ' sticky'
+            end
+        endif
+        call tlib#input#ListW(b:tlib_{a:name}, cmd)
     endif
-    call tlib#input#ListW(b:tlib_{a:name}, cmd)
 endf
 
 

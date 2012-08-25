@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2011-04-01.
-" @Revision:    0.1.915
+" @Last Change: 2012-02-28.
+" @Revision:    0.1.960
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -62,6 +62,7 @@ let s:prototype = tlib#Object#New({
             \ 'state': 'display', 
             \ 'state_handlers': [],
             \ 'sticky': 0,
+            \ 'temp_prompt': [],
             \ 'timeout': 0,
             \ 'timeout_resolution': 2,
             \ 'type': '', 
@@ -312,7 +313,11 @@ endf
 
 " :nodoc:
 function! s:prototype.GetBaseIdx0(idx) dict "{{{3
-    return self.GetBaseIdx(a:idx) - 1
+    let idx0 = self.GetBaseIdx(a:idx) - 1
+    if idx0 < 0
+        call tlib#notify#Echo('TLIB: Internal Error: GetBaseIdx0: idx0 < 0', 'WarningMsg')
+    endif
+    return idx0
 endf
 
 
@@ -630,7 +635,6 @@ function! s:prototype.UseInputListScratch() dict "{{{3
     hi def link InputlListIndex Constant
     hi def link InputlListCursor Search
     hi def link InputlListSelected IncSearch
-    " exec "au BufEnter <buffer> call tlib#input#Resume(". string(self.name) .")"
     setlocal nowrap
     " hi def link InputlListIndex Special
     " let b:tlibDisplayListMarks = {}
@@ -687,49 +691,71 @@ function! s:prototype.Retrieve(anyway) dict "{{{3
 endf
 
 
+function! s:prototype.FormatHelp(...) dict "{{{3
+    if a:0 == 2
+        return printf('%15s ... %s', a:1, a:2)
+    elseif a:0 == 4
+        return printf('%15s ... %-23s %15s ... %s', a:1, a:2, a:3, a:4)
+    else
+        throw 'TLIB: #FormatHelp(): Only 2 or 4 arguments allowed: ' + string(a:000)
+    endif
+endf
+
+
 " :nodoc:
 function! s:prototype.DisplayHelp() dict "{{{3
     " \ 'Help:',
     let help = [
-                \ 'Mouse        ... Pick an item            Letter          ... Filter the list',
-                \ printf('<m-Number>   ... Pick an item            "%s", "%s", %sWORD ... AND, OR, NOT',
-                \   g:tlib_inputlist_and, g:tlib_inputlist_or, g:tlib_inputlist_not),
-                \ 'Enter        ... Pick the current item   <bs>, <c-bs>    ... Reduce filter',
-                \ '<c|m-r>      ... Reset the display       Up/Down         ... Next/previous item',
-                \ '<c|m-q>      ... Edit top filter string  Page Up/Down    ... Scroll',
-                \ '<Esc>        ... Abort',
+                \ self.FormatHelp('Enter, <cr>', 'Pick the current item',  '<Esc>',        'Abort'),
+                \ self.FormatHelp('<m-Number>',  'Pick an item',           '<bs>, <c-bs>', 'Reduce filter'),
+                \ self.FormatHelp('Mouse',       'Pick an item',           'Letter',       'Filter the list'),
+                \ self.FormatHelp('<c|m-r>',     'Reset the display',      'Up/Down',      'Next/previous item'),
+                \ self.FormatHelp('<c|m-q>',     'Edit top filter string', 'Page Up/Down', 'Scroll'),
                 \ ]
 
     if self.allow_suspend
-        call add(help,
-                \ '<c|m-z>      ... Suspend/Resume          <c-o>           ... Switch to origin')
+        call add(help, self.FormatHelp('<c|m-z>', 'Suspend/Resume', '<c-o>', 'Switch to origin'))
     endif
 
     if stridx(self.type, 'm') != -1
         let help += [
-                \ '#, <c-space> ... (Un)Select the current item',
-                \ '<c|m-a>      ... (Un)Select all currently visible items',
-                \ '<s-up/down>  ... (Un)Select items',
+                \ self.FormatHelp('<s-up/down>', '(Un)Select items', '#, <c-space>', '(Un)Select the current item'),
+                \ self.FormatHelp('<c|m-a>', '(Un)Select all currently visible items')
                 \ ]
                     " \ '<c-\>        ... Show only selected',
     endif
+    let k0 = ''
+    let h0 = ''
+    let i0 = 0
+    let i = 0
+    let nkey_handlers = len(self.key_handlers)
     for handler in self.key_handlers
+        let i += 1
         let key = get(handler, 'key_name', '')
         if !empty(key)
             let desc = get(handler, 'help', '')
-            call add(help, printf('%-12s ... %s', key, desc))
+            if i0
+                call add(help, self.FormatHelp(k0, h0, key, desc))
+                let i0 = 0
+            elseif i == nkey_handlers
+                call add(help, self.FormatHelp(key, desc))
+            else
+                let k0 = key
+                let h0 = desc
+                let i0 = 1
+            endif
         endif
     endfor
     if !empty(self.help_extra)
         let help += self.help_extra
     endif
+    let help += self.matcher.Help(self)
     let help += [
                 \ '',
                 \ 'Exact matches and matches at word boundaries is given more weight.',
                 \ 'Warning: Please don''t resize the window with the mouse.',
-                \ '',
-                \ 'Press any key to continue.',
                 \ ]
+    let self.temp_prompt = ['Press any key to continue.', 'Question']
     " call tlib#normal#WithRegister('gg"tdG', 't')
     call tlib#buffer#DeleteRange('1', '$')
     call append(0, help)
@@ -799,6 +825,7 @@ function! s:prototype.DisplayList(query, ...) dict "{{{3
         call self.ScrollToOffset()
     elseif self.state == 'help'
         call self.DisplayHelp()
+        call self.SetStatusline(a:query)
     else
         " TLogVAR query
         " let ll = len(list)
@@ -850,21 +877,34 @@ endf
 
 
 function! s:prototype.SetStatusline(query) dict "{{{3
-    let query   = a:query
-    let options = [self.matcher.name]
-    if self.sticky
-        call add(options, '#')
+    if !empty(self.temp_prompt)
+        let echo = get(self.temp_prompt, 0, '')
+        let hl = get(self.temp_prompt, 1, 'Normal')
+        let self.temp_prompt = []
+    else
+        let hl = 'Normal'
+        let query   = a:query
+        let options = [self.matcher.name]
+        if self.sticky
+            call add(options, '#')
+        endif
+        if !empty(options)
+            let sopts = printf('[%s]', join(options, ', '))
+            " let echo  = query . repeat(' ', &columns - len(sopts) - len(query) - 20) . sopts
+            let echo  = query . '  ' . sopts
+            " let query .= '%%='. sopts .' '
+        endif
+        " TLogVAR &l:statusline, query
+        " let &l:statusline = query
     endif
-    if !empty(options)
-        let sopts = printf('[%s]', join(options, ', '))
-        " let echo  = query . repeat(' ', &columns - len(sopts) - len(query) - 20) . sopts
-        let echo  = query . '  ' . sopts
-        " let query .= '%%='. sopts .' '
-    endif
-    " TLogVAR &l:statusline, query
-    " let &l:statusline = query
     echo
-    echo echo
+    if hl != 'Normal'
+        exec 'echohl' hl
+        echo echo
+        echohl None
+    else
+        echo echo
+    endif
 endf
 
 

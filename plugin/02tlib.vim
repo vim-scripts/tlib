@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-04-10.
-" @Last Change: 2012-09-26.
-" @Revision:    686
+" @Last Change: 2012-10-03.
+" @Revision:    691
 " GetLatestVimScripts: 1863 1 tlib.vim
 
 if &cp || exists("loaded_tlib")
@@ -14,7 +14,7 @@ if v:version < 700 "{{{2
     echoerr "tlib requires Vim >= 7"
     finish
 endif
-let loaded_tlib = 100
+let loaded_tlib = 101
 
 let s:save_cpo = &cpo
 set cpo&vim
@@ -207,7 +207,7 @@ TLet g:tlib_viewline_position = 'zz'
 " :doc:
 " Keys for |tlib#input#List|~
 
-TLet g:tlib_inputlist_and = '" "'
+TLet g:tlib_inputlist_and = ' '
 TLet g:tlib_inputlist_or  = '|'
 TLet g:tlib_inputlist_not = '-'
 
@@ -269,6 +269,8 @@ TLet g:tlib_keyagents_InputList_s = {
             \ 15:            'tlib#agent#SuspendToParentWindow',  
             \ 63:            'tlib#agent#Help',
             \ "\<F1>":       'tlib#agent#Help',
+            \ "\<F10>":      'tlib#agent#ExecAgentByName',
+            \ "\<S-Esc>":    'tlib#agent#ExecAgentByName',
             \ "\<bs>":       'tlib#agent#ReduceFilter',
             \ "\<del>":      'tlib#agent#ReduceFilter',
             \ "\<c-bs>":     'tlib#agent#PopFilter',

@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2012-10-03.
-" @Revision:    0.1.1203
+" @Last Change: 2012-11-30.
+" @Revision:    0.1.1229
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -113,7 +113,7 @@ if g:tlib#input#format_filename == 'r'
     function! s:prototype.FormatFilename(file) dict "{{{3
         if !has_key(self.fmt_options, 'maxlen')
             let maxco = &co - len(len(self.base)) - eval(g:tlib#input#filename_padding_r)
-            let maxfi = max(map(copy(self.base), 'len(v:val)'))
+            let maxfi = max(map(copy(self.base), 'strwidth(v:val)'))
             let self.fmt_options.maxlen = min([maxco, maxfi])
             " TLogVAR maxco, maxfi, self.fmt_options.maxlen
         endif
@@ -135,11 +135,11 @@ else
         let self.width_filename = min([
                     \ get(self, 'width_filename', &co),
                     \ empty(g:tlib#input#filename_max_width) ? &co : eval(g:tlib#input#filename_max_width),
-                    \ max(map(copy(self.base), 'len(fnamemodify(v:val, ":t"))'))
+                    \ max(map(copy(self.base), 'strwidth(fnamemodify(v:val, ":t"))'))
                     \ ])
         " TLogVAR self.width_filename
         exec 'syntax match TLibFilename /[^\/]\+$/ contained containedin=TLibDir'
-        exec 'syntax match TLibDir /\%>'. (1 + self.width_filename) .'c \(|\|\[[^]]*\]\) \zs\(\(\a:\|\.\.\..\{-}\)\?[\/][^&<>*|]\{-}\)\?[^\/]\+$/ contained containedin=TLibMarker contains=TLibFilename'
+        exec 'syntax match TLibDir /\%>'. (1 + self.width_filename) .'c \(|\|\[[^]]*\]\) \zs\(\(\a:\|\.\.\|\.\.\..\{-}\)\?[\/][^&<>*|]\{-}\)\?[^\/]\+$/ contained containedin=TLibMarker contains=TLibFilename'
         exec 'syntax match TLibMarker /\%>'. (1 + self.width_filename) .'c \(|\|\[[^]]*\]\) \S.*$/ contains=TLibDir'
         hi def link TLibMarker Special
         hi def link TLibDir Directory
@@ -154,10 +154,11 @@ else
 
     " :nodoc:
     function! s:prototype.FormatFilename(file) dict "{{{3
+        " TLogVAR a:file
         let width = self.width_filename
         let split = match(a:file, '[/\\]\zs[^/\\]\+$')
         if split == -1
-            let fname = ''
+            let fname = a:file
             let dname = a:file
         else
             let fname = strpart(a:file, split)
@@ -167,15 +168,17 @@ else
         if strwidth(fname) > width
             let fname = strpart(fname, 0, width - 3) .'...'
         endif
-        let dnmax = &co - max([width, len(fname)]) - 10 - self.index_width - &fdc
+        let dnmax = &co - max([width, strwidth(fname)]) - 10 - self.index_width - &fdc
         if g:tlib_inputlist_filename_indicators
             let dnmax -= 2
         endif
-        if len(dname) > dnmax
+        if strwidth(dname) > dnmax
             let dname = '...'. strpart(dname, len(dname) - dnmax)
         endif
         let marker = []
-        if g:tlib_inputlist_filename_indicators
+        let use_indicators = g:tlib_inputlist_filename_indicators || has_key(self, 'filename_indicators')
+        " TLogVAR use_indicators
+        if use_indicators
             call insert(marker, '[')
             let bnr = bufnr(a:file)
             " TLogVAR a:file, bnr, self.bufnr
@@ -194,14 +197,24 @@ else
                 " if !buflisted(bnr)
                 "     call add(marker, 'u')
                 " endif
-            else
+                " echom "DBG" a:file string(get(self,'filename_indicators'))
+            endif
+            if has_key(self, 'filename_indicators') && has_key(self.filename_indicators, a:file)
+                if len(marker) > 1
+                    call add(marker, '|')
+                endif
+                call add(marker, self.filename_indicators[a:file])
+            endif
+            if len(marker) <= 1
                 call add(marker, ' ')
             endif
             call add(marker, ']')
         else
             call add(marker, '|')
         endif
-        return printf("%-". self.width_filename ."s %s %s", fname, join(marker, ''), dname)
+        return printf("%-*s %s %s",
+                    \ self.width_filename + len(fname) - strwidth(fname),
+                    \ fname, join(marker, ''), dname)
     endf
 
 endif

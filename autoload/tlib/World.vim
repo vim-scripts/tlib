@@ -3,12 +3,32 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-05-01.
-" @Last Change: 2013-07-16.
-" @Revision:    0.1.1251
+" @Last Change: 2013-09-26.
+" @Revision:    0.1.1297
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
 " Inherits from |tlib#Object#New|.
+
+
+" Size of the input list window (in percent) from the main size (of &lines).
+" See |tlib#input#List()|.
+TLet g:tlib_inputlist_pct = 50
+
+" Size of filename columns when listing filenames.
+" See |tlib#input#List()|.
+TLet g:tlib_inputlist_width_filename = '&co / 3'
+" TLet g:tlib_inputlist_width_filename = 25
+
+" If true, |tlib#input#List()| will show some indicators about the 
+" status of a filename (e.g. buflisted(), bufloaded() etc.).
+" This is disabled by default because vim checks also for the file on 
+" disk when doing this.
+TLet g:tlib_inputlist_filename_indicators = 0
+
+" If not null, display only a short info about the filter.
+TLet g:tlib_inputlist_shortmessage = 0
+
 
 
 " Known keys & values:
@@ -19,6 +39,7 @@ let s:prototype = tlib#Object#New({
             \ 'allow_suspend': 1,
             \ 'base': [], 
             \ 'bufnr': -1,
+            \ 'buffer_local': 1,
             \ 'cache_var': '',
             \ 'display_format': '',
             \ 'fileencoding': &fileencoding,
@@ -40,22 +61,26 @@ let s:prototype = tlib#Object#New({
             \ 'key_handlers': [],
             \ 'list': [],
             \ 'matcher': {},
+            \ 'next_agent': '',
+            \ 'next_eval': '',
             \ 'next_state': '',
-            \ 'numeric_chars': tlib#var#Get('tlib_numeric_chars', 'bg'),
+            \ 'numeric_chars': g:tlib#input#numeric_chars,
             \ 'offset': 1,
             \ 'offset_horizontal': 0,
             \ 'on_leave': [],
-            \ 'pick_last_item': tlib#var#Get('tlib_pick_last_item', 'bg'),
+            \ 'pick_last_item': tlib#var#Get('tlib#input#pick_last_item', 'bg'),
             \ 'post_handlers': [],
             \ 'query': '',
             \ 'resize': 0,
             \ 'resize_vertical': 0,
             \ 'restore_from_cache': [],
+            \ 'filtered_items': [],
             \ 'retrieve_eval': '',
             \ 'return_agent': '',
             \ 'rv': '',
             \ 'scratch': '__InputList__',
             \ 'scratch_filetype': 'tlibInputList',
+            \ 'scratch_hidden': g:tlib#scratch#hidden,
             \ 'scratch_vertical': 0,
             \ 'scratch_split': 1,
             \ 'sel_idx': [],
@@ -63,6 +88,7 @@ let s:prototype = tlib#Object#New({
             \ 'state': 'display', 
             \ 'state_handlers': [],
             \ 'sticky': 0,
+            \ 'temp_lines': [],
             \ 'temp_prompt': [],
             \ 'timeout': 0,
             \ 'timeout_resolution': 2,
@@ -77,7 +103,7 @@ let s:prototype = tlib#Object#New({
 
 function! tlib#World#New(...)
     let object = s:prototype.New(a:0 >= 1 ? a:1 : {})
-    call object.SetMatchMode(tlib#var#Get('tlib_inputlist_match', 'g', 'cnf'))
+    call object.SetMatchMode(tlib#var#Get('tlib#input#filter_mode', 'g', 'cnf'))
     return object
 endf
 
@@ -264,6 +290,26 @@ endf
 
 
 " :nodoc:
+function! s:prototype.SelectItemsByNames(mode, items) dict "{{{3
+    for item in a:items
+        let bi = index(self.base, item) + 1
+        " TLogVAR item, bi
+        if bi > 0
+            let si = index(self.sel_idx, bi)
+            " TLogVAR self.sel_idx
+            " TLogVAR si
+            if si == -1
+                call add(self.sel_idx, bi)
+            elseif a:mode == 'toggle'
+                call remove(self.sel_idx, si)
+            endif
+        endif
+    endfor
+    return 1
+endf
+
+
+" :nodoc:
 function! s:prototype.SelectItem(mode, index) dict "{{{3
     let bi = self.GetBaseIdx(a:index)
     " if self.RespondTo('MaySelectItem')
@@ -305,7 +351,7 @@ function! s:prototype.GetRx0(...) dict "{{{3
         " TLogVAR filter
         let rx = join(reverse(filter(copy(filter), '!empty(v:val)')), '\|')
         " TLogVAR rx
-        if !empty(rx) && (negative ? rx[0] == g:tlib_inputlist_not : rx[0] != g:tlib_inputlist_not)
+        if !empty(rx) && (negative ? rx[0] == g:tlib#input#not : rx[0] != g:tlib#input#not)
             call add(rx0, rx)
         endif
     endfor
@@ -491,7 +537,7 @@ function! s:prototype.SetFilter() dict "{{{3
                 let mrx1 = mrx
             endif
             " TLogVAR rx
-            if rx[0] == g:tlib_inputlist_not
+            if rx[0] == g:tlib#input#not
                 if len(rx) > 1
                     call add(self.filter_neg, mrx1 .'\('. rx[1:-1] .'\)')
                 endif
@@ -526,7 +572,7 @@ function! s:prototype.SetMatchMode(match_mode) dict "{{{3
             let self.matcher = tlib#Filter_{a:match_mode}#New()
             call self.matcher.Init(self)
         catch /^Vim\%((\a\+)\)\=:E117/
-            throw 'tlib: Unknown mode for tlib_inputlist_match: '. a:match_mode
+            throw 'tlib: Unknown mode for tlib#input#filter_mode: '. a:match_mode
         endtry
     endif
 endf
@@ -555,18 +601,21 @@ function! s:prototype.BuildTableList() dict "{{{3
     " TLogVAR time0
     call self.SetFilter()
     " TLogVAR self.filter_neg, self.filter_pos
-    if empty(self.filter_pos) && empty(self.filter_neg)
-        let self.table = range(1, len(self.base))
+    let self.table = range(1, len(self.base))
+    " TLogVAR self.filtered_items
+    let copy_base = 1
+    if !empty(self.filtered_items)
+        let self.table = filter(self.table, 'index(self.filtered_items, v:val) != -1')
+        let copy_base = 0
+    endif
+    if !empty(self.filter_pos) || !empty(self.filter_neg)
+        let self.table = filter(self.table, 'self.MatchBaseIdx(v:val)')
+        let copy_base = 0
+    endif
+    if copy_base
         let self.list = copy(self.base)
     else
-        " let time1 = str2float(reltimestr(reltime()))  " DBG
-        " TLogVAR time1, time1 - time0
-        let self.table = filter(range(1, len(self.base)), 'self.MatchBaseIdx(v:val)')
-        " let time2 = str2float(reltimestr(reltime()))  " DBG
-        " TLogVAR time2, time2 - time0
         let self.list  = map(copy(self.table), 'self.GetBaseItem(v:val)')
-        " let time3 = str2float(reltimestr(reltime()))  " DBG
-        " TLogVAR time3, time3 - time0
     endif
 endf
 
@@ -647,7 +696,18 @@ endf
 
 " :nodoc:
 function! s:prototype.UseScratch() dict "{{{3
-    keepalt return tlib#scratch#UseScratch(self)
+    " if type(self.scratch) != 0 && get(self, 'buffer_local', 1)
+    "     if self.scratch != fnamemodify(self.scratch, ':p')
+    "         let self.scratch = tlib#file#Join([expand('%:p:h'), self.scratch])
+    "         " TLogVAR self.scratch
+    "     endif
+    "     " let self.scratch_hidden = 'wipe'
+    " endif
+    keepjumps keepalt let rv = tlib#scratch#UseScratch(self)
+    " if expand('%:t') == self.scratch
+        let b:tlib_world = self
+    " endif
+    return rv
 endf
 
 
@@ -841,12 +901,12 @@ function! s:prototype.PushHelp(...) dict "{{{3
     " TLogVAR a:000
     if a:0 == 1
         if type(a:1) == 3
-            let self._help += a:1
+            let self.temp_lines += a:1
         else
-            call add(self._help, a:1)
+            call add(self.temp_lines, a:1)
         endif
     elseif a:0 == 2
-        call add(self._help, a:000)
+        call add(self.temp_lines, a:000)
     else
         throw "TLIB: PushHelp: Wrong number of arguments: ". string(a:000)
     endif
@@ -856,7 +916,7 @@ endf
 
 " :nodoc:
 function! s:prototype.DisplayHelp() dict "{{{3
-    let self._help = self.InitHelp()
+    let self.temp_lines = self.InitHelp()
     call self.PushHelp('<Esc>', self.key_mode == 'default' ? 'Abort' : 'Reset keymap')
     call self.PushHelp('Enter, <cr>', 'Pick the current item')
     call self.PushHelp('<M-Number>',  'Pick an item')
@@ -874,14 +934,15 @@ function! s:prototype.DisplayHelp() dict "{{{3
             call self.PushHelp('<C-o>', 'Switch to origin')
         endif
         if stridx(self.type, 'm') != -1
-            call self.PushHelp('<S-up/down>', '(Un)Select items')
+            call self.PushHelp('<S-Up/Down>', '(Un)Select items')
             call self.PushHelp('#, <C-Space>', '(Un)Select the current item')
             call self.PushHelp('<C|M-a>', '(Un)Select all items')
+            call self.PushHelp('<F9>', '(Un)Restrict view to selection')
             " \ '<c-\>        ... Show only selected',
         endif
     endif
 
-    " TLogVAR len(self._help)
+    " TLogVAR len(self.temp_lines)
     call self.matcher.Help(self)
 
     " TLogVAR self.key_mode
@@ -906,20 +967,24 @@ function! s:prototype.DisplayHelp() dict "{{{3
         call self.PushHelp(self.help_extra)
     endif
 
-    " TLogVAR len(self._help)
+    " TLogVAR len(self.temp_lines)
     call self.PushHelp([
                 \ '',
                 \ 'Matches at word boundaries are prioritized.',
                 \ ])
-    let self._help = s:FormatHelp(self._help)
+    let self.temp_lines = s:FormatHelp(self.temp_lines)
+    call self.PrintLines()
+endf
+
+
+function! s:prototype.PrintLines() dict "{{{3
     let self.temp_prompt = ['Press any key to continue.', 'Question']
-    " call tlib#normal#WithRegister('gg"tdG', 't')
     call tlib#buffer#DeleteRange('1', '$')
-    call append(0, self._help)
-    " call tlib#normal#WithRegister('G"tddgg', 't')
+    call append(0, self.temp_lines)
     call tlib#buffer#DeleteRange('$', '$')
     1
-    call self.Resize(len(self._help), 0)
+    call self.Resize(len(self.temp_lines), 0)
+    let self.temp_lines = []
 endf
 
 
@@ -988,6 +1053,9 @@ function! s:prototype.DisplayList(...) dict "{{{3
         call self.ScrollToOffset()
     elseif self.state == 'help'
         call self.DisplayHelp()
+        call self.SetStatusline(query)
+    elseif self.state == 'printlines'
+        call self.PrintLines()
         call self.SetStatusline(query)
     else
         " TLogVAR query
@@ -1059,6 +1127,13 @@ function! s:prototype.SetStatusline(query) dict "{{{3
         endif
         if self.key_mode != 'default'
             call add(options, 'map:'. self.key_mode)
+        endif
+        if !empty(self.filtered_items)
+            if g:tlib_inputlist_shortmessage
+                call add(options, 'R')
+            else
+                call add(options, 'restricted')
+            endif
         endif
         if !empty(options)
             let sopts = printf('[%s]', join(options, ', '))

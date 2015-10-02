@@ -1,6 +1,6 @@
 " @Author:      Tom Link (mailto:micathom AT gmail com?subject=[vim])
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
-" @Last Change: 2014-06-30.
+" @Last Change: 2015-08-05.
 " @Revision:    25
 
 
@@ -11,47 +11,6 @@ endif
 
 if !exists('g:tlib#sys#null')
     let g:tlib#sys#null = g:tlib#sys#windows ? 'NUL' : (filereadable('/dev/null') ? '/dev/null' : '')    "{{{2
-endif
-
-
-let s:executables = {}
-
-function! tlib#sys#IsExecutable(cmd, ...) "{{{3
-    " TLogVAR a:cmd
-    " echom "DBG has_key(s:executables, a:cmd)" has_key(s:executables, a:cmd)
-    if !has_key(s:executables, a:cmd)
-        let executable = executable(a:cmd)
-        " TLogVAR 1, executable
-        let ignore_cyg = a:0 >= 1 ? a:1 : !g:tlib#sys#windows
-        if !executable && !ignore_cyg
-            let executable = tlib#sys#IsCygwinBin(a:cmd)
-            " TLogVAR 2, executable
-        endif
-        let s:executables[a:cmd] = executable
-    endif
-    " echom "DBG s:executables[a:cmd]" s:executables[a:cmd]
-    return s:executables[a:cmd]
-endf
-
-
-if !exists('g:tlib#sys#check_cygpath')
-    " If true, check whether we have to convert a path via cyppath -- 
-    " see |tlib#sys#MaybeUseCygpath|
-    let g:tlib#sys#check_cygpath = g:tlib#sys#windows && tlib#sys#IsExecutable('cygpath')   "{{{2
-endif
-
-
-if !exists('g:tlib#sys#cygwin_path_rx')
-    " If a full windows filename (with slashes instead of backslashes) 
-    " matches this |regexp|, it is assumed to be a cygwin executable.
-    let g:tlib#sys#cygwin_path_rx = '/cygwin/'   "{{{2
-endif
-
-
-if !exists('g:tlib#sys#cygwin_expr')
-    " For cygwin binaries, convert command calls using this vim 
-    " expression.
-    let g:tlib#sys#cygwin_expr = '"bash -c ''". escape(%s, "''\\") ."''"'   "{{{2
 endif
 
 
@@ -82,6 +41,47 @@ function! tlib#sys#IsCygwinBin(cmd) "{{{3
     " TLogVAR rv
     return rv
 endf
+
+
+let s:executables = {}
+
+function! tlib#sys#IsExecutable(cmd, ...) "{{{3
+    " TLogVAR a:cmd
+    " echom "DBG has_key(s:executables, a:cmd)" has_key(s:executables, a:cmd)
+    if !has_key(s:executables, a:cmd)
+        let executable = executable(a:cmd)
+        " TLogVAR 1, executable
+        let ignore_cyg = a:0 >= 1 ? a:1 : !g:tlib#sys#windows
+        if !executable && !ignore_cyg
+            let executable = tlib#sys#IsCygwinBin(a:cmd)
+            " TLogVAR 2, executable
+        endif
+        let s:executables[a:cmd] = executable
+    endif
+    " echom "DBG s:executables[a:cmd]" s:executables[a:cmd]
+    return s:executables[a:cmd]
+endf
+
+
+if !exists('g:tlib#sys#check_cygpath')
+    " If true, check whether we have to convert a path via cyppath -- 
+    " see |tlib#sys#MaybeUseCygpath|
+    let g:tlib#sys#check_cygpath = g:tlib#sys#windows && tlib#sys#IsExecutable('cygpath', 1)   "{{{2
+endif
+
+
+if !exists('g:tlib#sys#cygwin_path_rx')
+    " If a full windows filename (with slashes instead of backslashes) 
+    " matches this |regexp|, it is assumed to be a cygwin executable.
+    let g:tlib#sys#cygwin_path_rx = '/cygwin/'   "{{{2
+endif
+
+
+if !exists('g:tlib#sys#cygwin_expr')
+    " For cygwin binaries, convert command calls using this vim 
+    " expression.
+    let g:tlib#sys#cygwin_expr = '"bash -c ''". escape(%s, "''\\") ."''"'   "{{{2
+endif
 
 
 function! tlib#sys#GetCmd(cmd) "{{{3

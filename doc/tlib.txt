@@ -48,6 +48,7 @@ Contents~
         g:tlib#debug ........................... |g:tlib#debug|
         tlib#notify#Echo ....................... |tlib#notify#Echo()|
         tlib#notify#TrimMessage ................ |tlib#notify#TrimMessage()|
+        tlib#dictionary#Rev .................... |tlib#dictionary#Rev()|
         g:tlib_persistent ...................... |g:tlib_persistent|
         tlib#persistent#Dir .................... |tlib#persistent#Dir()|
         tlib#persistent#Filename ............... |tlib#persistent#Filename()|
@@ -66,6 +67,7 @@ Contents~
         tlib#progressbar#Display ............... |tlib#progressbar#Display()|
         tlib#progressbar#Restore ............... |tlib#progressbar#Restore()|
         tlib#eval#FormatValue .................. |tlib#eval#FormatValue()|
+        tlib#eval#Extend ....................... |tlib#eval#Extend()|
         tlib#list#Inject ....................... |tlib#list#Inject()|
         tlib#list#Compact ...................... |tlib#list#Compact()|
         tlib#list#Flatten ...................... |tlib#list#Flatten()|
@@ -187,6 +189,7 @@ Contents~
         tlib#agent#Null ........................ |tlib#agent#Null()|
         tlib#agent#ExecAgentByName ............. |tlib#agent#ExecAgentByName()|
         tlib#agent#CompleteAgentNames .......... |tlib#agent#CompleteAgentNames()|
+        tlib#agent#Complete .................... |tlib#agent#Complete()|
         tlib#bitwise#Num2Bits .................. |tlib#bitwise#Num2Bits()|
         tlib#bitwise#Bits2Num .................. |tlib#bitwise#Bits2Num()|
         tlib#bitwise#AND ....................... |tlib#bitwise#AND()|
@@ -206,6 +209,7 @@ Contents~
         tlib#rx#Escape ......................... |tlib#rx#Escape()|
         tlib#rx#EscapeReplace .................. |tlib#rx#EscapeReplace()|
         tlib#rx#Suffixes ....................... |tlib#rx#Suffixes()|
+        tlib#rx#Convert ........................ |tlib#rx#Convert()|
         g:tlib_tags_extra ...................... |g:tlib_tags_extra|
         g:tlib_tag_substitute .................. |g:tlib_tag_substitute|
         tlib#tag#Retrieve ...................... |tlib#tag#Retrieve()|
@@ -242,6 +246,7 @@ Contents~
         g:tlib#file#drop ....................... |g:tlib#file#drop|
         g:tlib#file#use_tabs ................... |g:tlib#file#use_tabs|
         g:tlib#file#edit_cmds .................. |g:tlib#file#edit_cmds|
+        g:tlib#file#absolute_filename_rx ....... |g:tlib#file#absolute_filename_rx|
         tlib#file#Split ........................ |tlib#file#Split()|
         tlib#file#Join ......................... |tlib#file#Join()|
         tlib#file#Relative ..................... |tlib#file#Relative()|
@@ -249,6 +254,10 @@ Contents~
         tlib#file#Canonic ...................... |tlib#file#Canonic()|
         tlib#file#With ......................... |tlib#file#With()|
         tlib#file#Edit ......................... |tlib#file#Edit()|
+        g:tlib#sys#special_protocols ........... |g:tlib#sys#special_protocols|
+        g:tlib#sys#special_suffixes ............ |g:tlib#sys#special_suffixes|
+        g:tlib#sys#system_rx ................... |g:tlib#sys#system_rx|
+        g:tlib#sys#system_browser .............. |g:tlib#sys#system_browser|
         g:tlib#sys#windows ..................... |g:tlib#sys#windows|
         g:tlib#sys#null ........................ |g:tlib#sys#null|
         tlib#sys#IsCygwinBin ................... |tlib#sys#IsCygwinBin()|
@@ -260,6 +269,8 @@ Contents~
         tlib#sys#MaybeUseCygpath ............... |tlib#sys#MaybeUseCygpath()|
         tlib#sys#ConvertPath ................... |tlib#sys#ConvertPath()|
         tlib#sys#FileArgs ...................... |tlib#sys#FileArgs()|
+        tlib#sys#IsSpecial ..................... |tlib#sys#IsSpecial()|
+        tlib#sys#Open .......................... |tlib#sys#Open()|
         tlib#paragraph#GetMetric ............... |tlib#paragraph#GetMetric()|
         tlib#paragraph#Move .................... |tlib#paragraph#Move()|
         g:tlib_inputlist_pct ................... |g:tlib_inputlist_pct|
@@ -269,6 +280,7 @@ Contents~
         tlib#World#New ......................... |tlib#World#New()|
         prototype.PrintLines
         prototype.Suspend
+        tlib#loclist#Browse .................... |tlib#loclist#Browse()|
         tlib#tab#BufMap ........................ |tlib#tab#BufMap()|
         tlib#tab#TabWinNr ...................... |tlib#tab#TabWinNr()|
         tlib#tab#Set ........................... |tlib#tab#Set()|
@@ -290,6 +302,7 @@ Contents~
         tlib#arg#Key ........................... |tlib#arg#Key()|
         tlib#arg#StringAsKeyArgs ............... |tlib#arg#StringAsKeyArgs()|
         tlib#arg#StringAsKeyArgsEqual .......... |tlib#arg#StringAsKeyArgsEqual()|
+        tlib#arg#GetOpts ....................... |tlib#arg#GetOpts()|
         tlib#arg#Ex ............................ |tlib#arg#Ex()|
         tlib#fixes#Winpos ...................... |tlib#fixes#Winpos()|
         g:tlib#dir#sep ......................... |g:tlib#dir#sep|
@@ -320,6 +333,23 @@ Contents~
         tlib#grep#LocList ...................... |tlib#grep#LocList()|
         tlib#grep#QuickFixList ................. |tlib#grep#QuickFixList()|
         tlib#grep#List ......................... |tlib#grep#List()|
+        tlib#qfl#FormatQFLE .................... |tlib#qfl#FormatQFLE()|
+        tlib#qfl#QfeFilename ................... |tlib#qfl#QfeFilename()|
+        tlib#qfl#InitListBuffer ................ |tlib#qfl#InitListBuffer()|
+        tlib#qfl#Balloon ....................... |tlib#qfl#Balloon()|
+        tlib#qfl#AgentEditQFE .................. |tlib#qfl#AgentEditQFE()|
+        tlib#qfl#AgentPreviewQFE ............... |tlib#qfl#AgentPreviewQFE()|
+        tlib#qfl#AgentGotoQFE .................. |tlib#qfl#AgentGotoQFE()|
+        tlib#qfl#AgentWithSelected ............. |tlib#qfl#AgentWithSelected()|
+        tlib#qfl#RunCmdOnSelected .............. |tlib#qfl#RunCmdOnSelected()|
+        tlib#qfl#AgentSplitBuffer .............. |tlib#qfl#AgentSplitBuffer()|
+        tlib#qfl#AgentTabBuffer ................ |tlib#qfl#AgentTabBuffer()|
+        tlib#qfl#AgentVSplitBuffer ............. |tlib#qfl#AgentVSplitBuffer()|
+        tlib#qfl#AgentEditLine ................. |tlib#qfl#AgentEditLine()|
+        tlib#qfl#EditLine ...................... |tlib#qfl#EditLine()|
+        tlib#qfl#SetFollowCursor ............... |tlib#qfl#SetFollowCursor()|
+        tlib#qfl#QflList ....................... |tlib#qfl#QflList()|
+        tlib#qfl#Browse ........................ |tlib#qfl#Browse()|
         tlib#Filter_cnf#New .................... |tlib#Filter_cnf#New()|
         prototype.Pretty
         tlib#Object#New ........................ |tlib#Object#New()|
@@ -498,6 +528,13 @@ tlib#notify#TrimMessage(message)
 
 
 ========================================================================
+autoload/tlib/dictionary.vim~
+
+                                                    *tlib#dictionary#Rev()*
+tlib#dictionary#Rev(dict)
+
+
+========================================================================
 autoload/tlib/persistent.vim~
 
                                                     *g:tlib_persistent*
@@ -598,6 +635,9 @@ autoload/tlib/eval.vim~
 
                                                     *tlib#eval#FormatValue()*
 tlib#eval#FormatValue(value, ...)
+
+                                                    *tlib#eval#Extend()*
+tlib#eval#Extend(a, b)
 
 
 ========================================================================
@@ -922,7 +962,7 @@ tlib#cache#Dir(?mode = 'bg')
 tlib#cache#Filename(type, ?file=%, ?mkdir=0, ?dir='')
 
                                                     *tlib#cache#Save()*
-tlib#cache#Save(cfile, dictionary)
+tlib#cache#Save(cfile, dictionary, ...)
 
                                                     *tlib#cache#MTime()*
 tlib#cache#MTime(cfile)
@@ -931,7 +971,7 @@ tlib#cache#MTime(cfile)
 tlib#cache#Get(cfile, ...)
 
                                                     *tlib#cache#Value()*
-tlib#cache#Value(cfile, generator, ftime, ...)
+tlib#cache#Value(cfile, generator, ftime, ?generator_args=[], ?options={})
     Get a cached value from cfile. If it is outdated (compared to ftime) 
     or does not exist, create it calling a generator function.
 
@@ -1189,6 +1229,9 @@ tlib#agent#ExecAgentByName(world, selected)
                                                     *tlib#agent#CompleteAgentNames()*
 tlib#agent#CompleteAgentNames(ArgLead, CmdLine, CursorPos)
 
+                                                    *tlib#agent#Complete()*
+tlib#agent#Complete(world, selected)
+
 
 ========================================================================
 autoload/tlib/bitwise.vim~
@@ -1276,6 +1319,12 @@ tlib#rx#EscapeReplace(text, ?magic='m')
 
                                                     *tlib#rx#Suffixes()*
 tlib#rx#Suffixes(...)
+
+                                                    *tlib#rx#Convert()*
+tlib#rx#Convert(rx, to, ?from = 'guess')
+    Convert a subset of |regexp| expressions to another form.
+    Supported types: m, M, v, V
+    Supported expressions: ^, $, ., \(\|), \{}, *, \+, \?, \=, []
 
 
 ========================================================================
@@ -1514,6 +1563,9 @@ tlib#input#List(type. ?query='', ?list=[], ?handlers=[], ?default="", ?timeout=0
     Several pattern matching styles are supported. See 
     |g:tlib#input#filter_mode|.
 
+    Users can type <Tab> to complete the current filter with the longest 
+    match.
+
     EXAMPLES: >
       echo tlib#input#List('s', 'Select one item', [100,200,300])
       echo tlib#input#List('si', 'Select one item', [100,200,300])
@@ -1596,6 +1648,9 @@ g:tlib#file#use_tabs           (default: 0)
                                                     *g:tlib#file#edit_cmds*
 g:tlib#file#edit_cmds          (default: g:tlib#file#use_tabs ? {'buffer': 'tab split | buffer', 'edit': 'tabedit'} : {})
 
+                                                    *g:tlib#file#absolute_filename_rx*
+g:tlib#file#absolute_filename_rx (default: '^\~\?[\/]')
+
                                                     *tlib#file#Split()*
 tlib#file#Split(filename)
     EXAMPLES: >
@@ -1604,7 +1659,7 @@ tlib#file#Split(filename)
 <
 
                                                     *tlib#file#Join()*
-tlib#file#Join(filename_parts, ?strip_slashes=1)
+tlib#file#Join(filename_parts, ?strip_slashes=1, ?maybe_absolute=0)
     EXAMPLES: >
       tlib#file#Join(['foo', 'bar', 'filename.txt'])
       => 'foo/bar/filename.txt'
@@ -1634,6 +1689,27 @@ tlib#file#Edit(fileid)
 
 ========================================================================
 autoload/tlib/sys.vim~
+
+                                                    *g:tlib#sys#special_protocols*
+g:tlib#sys#special_protocols   (default: ['https\?', 'nntp', 'mailto'])
+    A list of |regexp|s matching protocol names that should be handled 
+    by |g:tlib#sys#system_browser|.
+    CAVEAT: Must be a |\V| |regexp|.
+
+                                                    *g:tlib#sys#special_suffixes*
+g:tlib#sys#special_suffixes    (default: ['xlsx\?', 'docx\?', 'pptx\?', 'accdb', 'mdb', 'sqlite', 'pdf', 'jpg', 'png', 'gif'])
+    A list of |regexp|s matching suffixes that should be handled by 
+    |g:tlib#sys#system_browser|.
+    CAVEAT: Must be a |\V| |regexp|.
+
+                                                    *g:tlib#sys#system_rx*
+g:tlib#sys#system_rx           (default: printf('\V\%(\^\%(%s\):\|.\%(%s\)\)', join(g:tlib#sys#special_protocols, '\|'), join(g:tlib#sys#special_suffixes, '\|')))
+    Open links matching this |regexp| with |g:tlib#sys#system_browser|.
+    CAVEAT: Must be a |\V| |regexp|.
+
+                                                    *g:tlib#sys#system_browser*
+g:tlib#sys#system_browser      (default: ...)
+    Open files in the system browser.
 
                                                     *g:tlib#sys#windows*
 g:tlib#sys#windows             (default: &shell !~ 'sh' && (has('win16') || has('win32') || has('win64')))
@@ -1676,6 +1752,17 @@ tlib#sys#ConvertPath(converter, filename)
 
                                                     *tlib#sys#FileArgs()*
 tlib#sys#FileArgs(cmd, files)
+
+                                                    *tlib#sys#IsSpecial()*
+tlib#sys#IsSpecial(filename)
+    Check whether filename matches |g:tlib#sys#system_rx|, i.e. whether it 
+    is a special file that should not be opened in vim.
+
+                                                    *tlib#sys#Open()*
+tlib#sys#Open(filename)
+    Open filename with the default OS application (see 
+    |g:tlib#sys#system_browser|), if |tlib#sys#IsSpecial()| return 1. 
+    Returns 1 if successful or 0 otherwise.
 
 
 ========================================================================
@@ -1732,6 +1819,13 @@ tlib#World#New(...)
 prototype.PrintLines
 
 prototype.Suspend
+
+
+========================================================================
+autoload/tlib/loclist.vim~
+
+                                                    *tlib#loclist#Browse()*
+tlib#loclist#Browse(...)
 
 
 ========================================================================
@@ -1837,10 +1931,13 @@ tlib#arg#Key(dict, list, ?default='')
     See |:TKeyArg|.
 
                                                     *tlib#arg#StringAsKeyArgs()*
-tlib#arg#StringAsKeyArgs(string, ?keys=[], ?evaluate=0, ?sep=':')
+tlib#arg#StringAsKeyArgs(string, ?keys=[], ?evaluate=0, ?sep=':', ?booleans=0)
 
                                                     *tlib#arg#StringAsKeyArgsEqual()*
 tlib#arg#StringAsKeyArgsEqual(string)
+
+                                                    *tlib#arg#GetOpts()*
+tlib#arg#GetOpts(args, ...)
 
                                                     *tlib#arg#Ex()*
 tlib#arg#Ex(arg, ?chars='%#! ')
@@ -1982,6 +2079,61 @@ tlib#grep#QuickFixList(rx, files)
 
                                                     *tlib#grep#List()*
 tlib#grep#List(rx, files)
+
+
+========================================================================
+autoload/tlib/qfl.vim~
+
+                                                    *tlib#qfl#FormatQFLE()*
+tlib#qfl#FormatQFLE(qfe)
+
+                                                    *tlib#qfl#QfeFilename()*
+tlib#qfl#QfeFilename(qfe)
+
+                                                    *tlib#qfl#InitListBuffer()*
+tlib#qfl#InitListBuffer(world)
+
+                                                    *tlib#qfl#Balloon()*
+tlib#qfl#Balloon()
+
+                                                    *tlib#qfl#AgentEditQFE()*
+tlib#qfl#AgentEditQFE(world, selected, ...)
+
+                                                    *tlib#qfl#AgentPreviewQFE()*
+tlib#qfl#AgentPreviewQFE(world, selected)
+
+                                                    *tlib#qfl#AgentGotoQFE()*
+tlib#qfl#AgentGotoQFE(world, selected)
+
+                                                    *tlib#qfl#AgentWithSelected()*
+tlib#qfl#AgentWithSelected(world, selected, ...)
+
+                                                    *tlib#qfl#RunCmdOnSelected()*
+tlib#qfl#RunCmdOnSelected(world, selected, cmd, ...)
+
+                                                    *tlib#qfl#AgentSplitBuffer()*
+tlib#qfl#AgentSplitBuffer(world, selected)
+
+                                                    *tlib#qfl#AgentTabBuffer()*
+tlib#qfl#AgentTabBuffer(world, selected)
+
+                                                    *tlib#qfl#AgentVSplitBuffer()*
+tlib#qfl#AgentVSplitBuffer(world, selected)
+
+                                                    *tlib#qfl#AgentEditLine()*
+tlib#qfl#AgentEditLine(world, selected)
+
+                                                    *tlib#qfl#EditLine()*
+tlib#qfl#EditLine(lnum)
+
+                                                    *tlib#qfl#SetFollowCursor()*
+tlib#qfl#SetFollowCursor(world, selected)
+
+                                                    *tlib#qfl#QflList()*
+tlib#qfl#QflList(list, ...)
+
+                                                    *tlib#qfl#Browse()*
+tlib#qfl#Browse(...)
 
 
 ========================================================================

@@ -1,7 +1,7 @@
 " @Author:      Tom Link (mailto:micathom AT gmail com?subject=[vim])
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
-" @Last Change: 2015-10-15.
-" @Revision:    39
+" @Last Change: 2015-11-07.
+" @Revision:    51
 
 
 if !exists('g:tlib#sys#special_protocols')
@@ -38,7 +38,7 @@ if !exists("g:tlib#sys#system_browser")
     elseif has("mac")
         let g:tlib#sys#system_browser = "exec 'silent !open' shellescape('%s')"
     elseif exists('$XDG_CURRENT_DESKTOP') && !empty($XDG_CURRENT_DESKTOP)
-        let g:tlib#sys#system_browser = "exec 'silent !xdg-open' shellescape('%s') .'&'"
+        let g:tlib#sys#system_browser = "exec 'silent !xdg-open' shellescape('%s') '&'"
     elseif $GNOME_DESKTOP_SESSION_ID != "" || $DESKTOP_SESSION == 'gnome'
         let g:tlib#sys#system_browser = "exec 'silent !gnome-open' shellescape('%s')"
     elseif exists("$KDEDIR") && !empty($KDEDIR)
@@ -182,9 +182,11 @@ endf
 " |g:tlib#sys#system_browser|), if |tlib#sys#IsSpecial()| return 1. 
 " Returns 1 if successful or 0 otherwise.
 function! tlib#sys#Open(filename) abort "{{{3
+    Tlibtrace 'tlib', a:filename
     if !empty(g:tlib#sys#system_browser) && tlib#sys#IsSpecial(a:filename)
         try
             let cmd = printf(g:tlib#sys#system_browser, escape(a:filename, ' %#!'))
+            Tlibtrace 'tlib', cmd
             exec cmd
             return 1
         catch
@@ -194,5 +196,16 @@ function! tlib#sys#Open(filename) abort "{{{3
         endtry
     endif
     return 0
+endf
+
+
+" :def: function! tlib#sys#SystemInDir(dir, expr, ?input='')
+function! tlib#sys#SystemInDir(dir, ...) abort "{{{3
+    call tlib#dir#CD(a:dir)
+    try
+        return call(function('system'), a:000)
+    finally
+        cd! -
+    endtry
 endf
 

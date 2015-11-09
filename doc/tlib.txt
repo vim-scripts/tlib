@@ -30,14 +30,13 @@ installed.
 ========================================================================
 Contents~
 
-        :TRequire .............................. |:TRequire|
         :TLet .................................. |:TLet|
         :TScratch .............................. |:TScratch|
         :TVarArg ............................... |:TVarArg|
-        :TKeyArg ............................... |:TKeyArg|
         :TBrowseOutput ......................... |:TBrowseOutput|
         :TBrowseScriptnames .................... |:TBrowseScriptnames|
-        :TTimeCommand .......................... |:TTimeCommand|
+        :Tlibtrace ............................. |:Tlibtrace|
+        :Tlibtraceset .......................... |:Tlibtraceset|
         Add .................................... |Add()|
         TestGetArg ............................. |TestGetArg()|
         TestGetArg1 ............................ |TestGetArg1()|
@@ -48,6 +47,13 @@ Contents~
         g:tlib#debug ........................... |g:tlib#debug|
         tlib#notify#Echo ....................... |tlib#notify#Echo()|
         tlib#notify#TrimMessage ................ |tlib#notify#TrimMessage()|
+        g:tlib#trace#backtrace ................. |g:tlib#trace#backtrace|
+        g:tlib#trace#printf .................... |g:tlib#trace#printf|
+        tlib#trace#PrintToFile ................. |tlib#trace#PrintToFile()|
+        tlib#trace#Set ......................... |tlib#trace#Set()|
+        tlib#trace#Print ....................... |tlib#trace#Print()|
+        tlib#trace#Enable ...................... |tlib#trace#Enable()|
+        tlib#trace#Disable ..................... |tlib#trace#Disable()|
         tlib#dictionary#Rev .................... |tlib#dictionary#Rev()|
         g:tlib_persistent ...................... |g:tlib_persistent|
         tlib#persistent#Dir .................... |tlib#persistent#Dir()|
@@ -85,6 +91,7 @@ Contents~
         tlib#cmd#BrowseOutputWithCallback ...... |tlib#cmd#BrowseOutputWithCallback()|
         tlib#cmd#DefaultBrowseOutput ........... |tlib#cmd#DefaultBrowseOutput()|
         tlib#cmd#ParseScriptname ............... |tlib#cmd#ParseScriptname()|
+        tlib#cmd#TBrowseScriptnames ............ |tlib#cmd#TBrowseScriptnames()|
         tlib#cmd#UseVertical ................... |tlib#cmd#UseVertical()|
         tlib#cmd#Time .......................... |tlib#cmd#Time()|
         tlib#cmd#Capture ....................... |tlib#cmd#Capture()|
@@ -100,6 +107,7 @@ Contents~
         tlib#vcs#FindVCS ....................... |tlib#vcs#FindVCS()|
         tlib#vcs#Ls ............................ |tlib#vcs#Ls()|
         tlib#vcs#Diff .......................... |tlib#vcs#Diff()|
+        tlib#vcs#GitLsPostprocess .............. |tlib#vcs#GitLsPostprocess()|
         tlib#char#Get .......................... |tlib#char#Get()|
         tlib#char#IsAvailable .................. |tlib#char#IsAvailable()|
         tlib#char#GetWithTimeout ............... |tlib#char#GetWithTimeout()|
@@ -131,6 +139,7 @@ Contents~
         tlib#normal#WithRegister ............... |tlib#normal#WithRegister()|
         tlib#time#MSecs ........................ |tlib#time#MSecs()|
         tlib#time#Now .......................... |tlib#time#Now()|
+        tlib#time#FormatNow .................... |tlib#time#FormatNow()|
         tlib#time#Diff ......................... |tlib#time#Diff()|
         tlib#time#DiffMSecs .................... |tlib#time#DiffMSecs()|
         tlib#var#Let ........................... |tlib#var#Let()|
@@ -209,7 +218,7 @@ Contents~
         tlib#rx#Escape ......................... |tlib#rx#Escape()|
         tlib#rx#EscapeReplace .................. |tlib#rx#EscapeReplace()|
         tlib#rx#Suffixes ....................... |tlib#rx#Suffixes()|
-        tlib#rx#Convert ........................ |tlib#rx#Convert()|
+        tlib#rx#LooksLikeRegexp ................ |tlib#rx#LooksLikeRegexp()|
         g:tlib_tags_extra ...................... |g:tlib_tags_extra|
         g:tlib_tag_substitute .................. |g:tlib_tag_substitute|
         tlib#tag#Retrieve ...................... |tlib#tag#Retrieve()|
@@ -254,6 +263,8 @@ Contents~
         tlib#file#Canonic ...................... |tlib#file#Canonic()|
         tlib#file#With ......................... |tlib#file#With()|
         tlib#file#Edit ......................... |tlib#file#Edit()|
+        tlib#file#Glob ......................... |tlib#file#Glob()|
+        tlib#file#Globpath ..................... |tlib#file#Globpath()|
         g:tlib#sys#special_protocols ........... |g:tlib#sys#special_protocols|
         g:tlib#sys#special_suffixes ............ |g:tlib#sys#special_suffixes|
         g:tlib#sys#system_rx ................... |g:tlib#sys#system_rx|
@@ -271,6 +282,7 @@ Contents~
         tlib#sys#FileArgs ...................... |tlib#sys#FileArgs()|
         tlib#sys#IsSpecial ..................... |tlib#sys#IsSpecial()|
         tlib#sys#Open .......................... |tlib#sys#Open()|
+        tlib#sys#SystemInDir ................... |tlib#sys#SystemInDir()|
         tlib#paragraph#GetMetric ............... |tlib#paragraph#GetMetric()|
         tlib#paragraph#Move .................... |tlib#paragraph#Move()|
         g:tlib_inputlist_pct ................... |g:tlib_inputlist_pct|
@@ -287,6 +299,7 @@ Contents~
         tlib#date#DiffInDays ................... |tlib#date#DiffInDays()|
         tlib#date#Parse ........................ |tlib#date#Parse()|
         tlib#date#SecondsSince1970 ............. |tlib#date#SecondsSince1970()|
+        tlib#date#Shift ........................ |tlib#date#Shift()|
         tlib#type#IsNumber ..................... |tlib#type#IsNumber()|
         tlib#type#IsString ..................... |tlib#type#IsString()|
         tlib#type#IsFuncref .................... |tlib#type#IsFuncref()|
@@ -299,7 +312,6 @@ Contents~
         o_sp ................................... |o_sp|
         tlib#arg#Get ........................... |tlib#arg#Get()|
         tlib#arg#Let ........................... |tlib#arg#Let()|
-        tlib#arg#Key ........................... |tlib#arg#Key()|
         tlib#arg#StringAsKeyArgs ............... |tlib#arg#StringAsKeyArgs()|
         tlib#arg#StringAsKeyArgsEqual .......... |tlib#arg#StringAsKeyArgsEqual()|
         tlib#arg#GetOpts ....................... |tlib#arg#GetOpts()|
@@ -336,6 +348,7 @@ Contents~
         tlib#qfl#FormatQFLE .................... |tlib#qfl#FormatQFLE()|
         tlib#qfl#QfeFilename ................... |tlib#qfl#QfeFilename()|
         tlib#qfl#InitListBuffer ................ |tlib#qfl#InitListBuffer()|
+        tlib#qfl#SetSyntax ..................... |tlib#qfl#SetSyntax()|
         tlib#qfl#Balloon ....................... |tlib#qfl#Balloon()|
         tlib#qfl#AgentEditQFE .................. |tlib#qfl#AgentEditQFE()|
         tlib#qfl#AgentPreviewQFE ............... |tlib#qfl#AgentPreviewQFE()|
@@ -387,18 +400,11 @@ Contents~
         tlib#string#TrimRight .................. |tlib#string#TrimRight()|
         tlib#string#Strip ...................... |tlib#string#Strip()|
         tlib#string#Count ...................... |tlib#string#Count()|
+        tlib#string#SplitCommaList ............. |tlib#string#SplitCommaList()|
 
 
 ========================================================================
 plugin/02tlib.vim~
-
-                                                    *:TRequire*
-:TRequire NAME [VERSION [FILE]]
-    Make a certain vim file is loaded.
-
-    Conventions: If FILE isn't defined, plugin/NAME.vim is loaded. The 
-    file must provide a variable loaded_{NAME} that represents the version 
-    number.
 
                                                     *:TLet*
 :TLet VAR = VALUE
@@ -432,17 +438,6 @@ plugin/02tlib.vim~
       endf
 <
 
-                                                    *:TKeyArg*
-:TKeyArg DICT, VAR1, [VAR2, DEFAULT2] ...
-    A convenience wrapper for |tlib#arg#Let|.
-    EXAMPLES: >
-      function! Foo(keyargs)
-          TKeyArg a:keyargs, ['a', 1], 'b'
-          echo 'a='. a
-          echo 'b='. b
-      endf
-<
-
                                                     *:TBrowseOutput*
 :TBrowseOutput COMMAND
     Ever wondered how to efficiently browse the output of a command 
@@ -469,9 +464,21 @@ plugin/02tlib.vim~
       TBrowseScriptnames 
 <
 
-                                                    *:TTimeCommand*
-:TTimeCommand CMD
-    Time the execution time of CMD.
+                                                    *:Tlibtrace*
+:Tlibtrace GUARD, VAR1, VAR2...
+    Do nothing unless |tlib#trace#Enable()| was called.
+
+    When |:Tlibtraceset| or |tlib#trace#Enable()| were called:
+
+    If GUARD is a number that evaluates to true or if it is a string that 
+    matches a |regexp|, which was added using Tlibtrace! (with '!'), 
+    display the values of VAR1, VAR2 ...
+
+                                                    *:Tlibtraceset*
+:Tlibtraceset
+    :Tlibtraceset +RX1, -RX2...
+    If |tlib#trace#Enable()| was called: With the optional <bang>, users 
+    can add and remove GUARDs (actually a |regexp|) that should be traced.
 
 
 ========================================================================
@@ -525,6 +532,46 @@ tlib#notify#TrimMessage(message)
     The echoed line is too long if it is wider than the width of the 
     window, minus cmdline space taken up by the ruler and showcmd 
     features.
+
+
+========================================================================
+autoload/tlib/trace.vim~
+
+                                                    *g:tlib#trace#backtrace*
+g:tlib#trace#backtrace         (default: 2)
+    The length of the backtrace that should be included in 
+    |tlib#trace#Print()|.
+
+                                                    *g:tlib#trace#printf*
+g:tlib#trace#printf            (default: 'echom %s')
+    The command used for printing traces from |tlib#trace#Print()|.
+
+                                                    *tlib#trace#PrintToFile()*
+tlib#trace#PrintToFile(filename)
+    Set |g:tlib#trace#printf| to make |tlib#trace#Print()| print to 
+    `filename`.
+
+                                                    *tlib#trace#Set()*
+tlib#trace#Set(vars)
+    Set the tracing |regexp|. See |:Tlibtrace|.
+    This will also call |tlib#trace#Enable()|.
+
+    Examples:
+      call tlib#trace#Set(["+foo", "-bar"])
+      call tlib#trace#Set("+foo,-bar")
+
+                                                    *tlib#trace#Print()*
+tlib#trace#Print(caller, vars, values)
+    Print the values of vars. The first value is a "guard" (see 
+    |:Tlibtrace|).
+
+                                                    *tlib#trace#Enable()*
+tlib#trace#Enable()
+    Enable tracing via |:Tlibtrace|.
+
+                                                    *tlib#trace#Disable()*
+tlib#trace#Disable()
+    Disable tracing via |:Tlibtrace|.
 
 
 ========================================================================
@@ -758,6 +805,9 @@ tlib#cmd#DefaultBrowseOutput(cmd)
                                                     *tlib#cmd#ParseScriptname()*
 tlib#cmd#ParseScriptname(line)
 
+                                                    *tlib#cmd#TBrowseScriptnames()*
+tlib#cmd#TBrowseScriptnames()
+
                                                     *tlib#cmd#UseVertical()*
 tlib#cmd#UseVertical(?rx='')
     Look at the history whether the command was called with vertical. If 
@@ -827,6 +877,9 @@ tlib#vcs#Ls(?filename=bufname('%'), ?vcs=[type, dir])
                                                     *tlib#vcs#Diff()*
 tlib#vcs#Diff(filename, ?vcs=[type, dir])
     Return the diff for "filename"
+
+                                                    *tlib#vcs#GitLsPostprocess()*
+tlib#vcs#GitLsPostprocess(filename)
 
 
 ========================================================================
@@ -1004,6 +1057,9 @@ tlib#time#MSecs()
 
                                                     *tlib#time#Now()*
 tlib#time#Now()
+
+                                                    *tlib#time#FormatNow()*
+tlib#time#FormatNow()
 
                                                     *tlib#time#Diff()*
 tlib#time#Diff(a, b, ...)
@@ -1320,11 +1376,8 @@ tlib#rx#EscapeReplace(text, ?magic='m')
                                                     *tlib#rx#Suffixes()*
 tlib#rx#Suffixes(...)
 
-                                                    *tlib#rx#Convert()*
-tlib#rx#Convert(rx, to, ?from = 'guess')
-    Convert a subset of |regexp| expressions to another form.
-    Supported types: m, M, v, V
-    Supported expressions: ^, $, ., \(\|), \{}, *, \+, \?, \=, []
+                                                    *tlib#rx#LooksLikeRegexp()*
+tlib#rx#LooksLikeRegexp(text)
 
 
 ========================================================================
@@ -1686,6 +1739,12 @@ tlib#file#Edit(fileid)
     Return 0 if the file isn't readable/doesn't exist.
     Otherwise return 1.
 
+                                                    *tlib#file#Glob()*
+tlib#file#Glob(pattern)
+
+                                                    *tlib#file#Globpath()*
+tlib#file#Globpath(path, pattern)
+
 
 ========================================================================
 autoload/tlib/sys.vim~
@@ -1763,6 +1822,9 @@ tlib#sys#Open(filename)
     Open filename with the default OS application (see 
     |g:tlib#sys#system_browser|), if |tlib#sys#IsSpecial()| return 1. 
     Returns 1 if successful or 0 otherwise.
+
+                                                    *tlib#sys#SystemInDir()*
+tlib#sys#SystemInDir(dir, expr, ?input='')
 
 
 ========================================================================
@@ -1856,6 +1918,9 @@ tlib#date#Parse(date, ?allow_zero=0) "{{{3
 tlib#date#SecondsSince1970(date, ...)
     tlib#date#SecondsSince1970(date, ?daysshift=0, ?allow_zero=0)
 
+                                                    *tlib#date#Shift()*
+tlib#date#Shift(date, shift)
+
 
 ========================================================================
 autoload/tlib/type.vim~
@@ -1926,10 +1991,6 @@ tlib#arg#Let(list, ?default='')
     Set a positional arguments from a variable argument list.
     See tlib#input#List() for an example.
 
-                                                    *tlib#arg#Key()*
-tlib#arg#Key(dict, list, ?default='')
-    See |:TKeyArg|.
-
                                                     *tlib#arg#StringAsKeyArgs()*
 tlib#arg#StringAsKeyArgs(string, ?keys=[], ?evaluate=0, ?sep=':', ?booleans=0)
 
@@ -1937,7 +1998,22 @@ tlib#arg#StringAsKeyArgs(string, ?keys=[], ?evaluate=0, ?sep=':', ?booleans=0)
 tlib#arg#StringAsKeyArgsEqual(string)
 
                                                     *tlib#arg#GetOpts()*
-tlib#arg#GetOpts(args, ...)
+tlib#arg#GetOpts(args, ?def={})
+    Convert a list of strings of command-line arguments into a dictonary.
+
+    The main use case is to pass [<f-args>], i.e. the command-line 
+    arguments of a command as list, from a command definition to this 
+    function.
+
+    Example:
+    ['-h']
+    => If def contains a 'help' key, invoke |:help| on its value.
+
+    ['-ab', '--foo', '--bar=BAR', 'bla', bla']
+    => {'a': 1, 'b': 1, 'foo': 1, 'bar': 'BAR', '__rest__': ['bla', 'bla']}
+
+    ['-ab', '--', '--foo', '--bar=BAR']
+    => {'a': 1, 'b': 1, '__rest__': ['--foo', '--bar=BAR']}
 
                                                     *tlib#arg#Ex()*
 tlib#arg#Ex(arg, ?chars='%#! ')
@@ -2092,6 +2168,9 @@ tlib#qfl#QfeFilename(qfe)
 
                                                     *tlib#qfl#InitListBuffer()*
 tlib#qfl#InitListBuffer(world)
+
+                                                    *tlib#qfl#SetSyntax()*
+tlib#qfl#SetSyntax()
 
                                                     *tlib#qfl#Balloon()*
 tlib#qfl#Balloon()
@@ -2347,6 +2426,9 @@ tlib#string#Strip(string)
 
                                                     *tlib#string#Count()*
 tlib#string#Count(string, rx)
+
+                                                    *tlib#string#SplitCommaList()*
+tlib#string#SplitCommaList(text, ...)
 
 
 

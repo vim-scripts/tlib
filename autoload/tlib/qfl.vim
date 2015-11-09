@@ -1,8 +1,8 @@
 " @Author:      Tom Link (mailto:micathom AT gmail com?subject=[vim])
 " @Website:     https://github.com/tomtom
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
-" @Last Change: 2015-10-26
-" @Revision:    32
+" @Last Change: 2015-11-09
+" @Revision:    55
 
 " :nodoc:
 TLet g:tlib#qfl#world = {
@@ -46,7 +46,7 @@ endf
 
 
 function! tlib#qfl#InitListBuffer(world) "{{{3
-    let set_syntax = get(a:world, 'set_syntax', 's:SetSyntax')
+    let set_syntax = get(a:world, 'set_syntax', 'tlib#qfl#SetSyntax')
     call call(set_syntax, [], a:world)
     if has('balloon_eval')
         setlocal ballooneval balloonexpr=tlib#qfl#Balloon()
@@ -54,13 +54,14 @@ function! tlib#qfl#InitListBuffer(world) "{{{3
 endf
 
 
-function! s:SetSyntax() dict "{{{3
+function! tlib#qfl#SetSyntax() dict abort "{{{3
     let syntax = get(self, 'qfl_list_syntax', '')
     let nextgroup = get(self, 'qfl_list_syntax_nextgroup', '')
+    " TLogVAR syntax, nextgroup
     if !empty(syntax)
         exec printf('runtime syntax/%s.vim', syntax)
     endif
-    syn match TTagedFilesFilename / \zs.\{-}\ze|\d\+| / nextgroup=TTagedFilesLNum
+    syn match TTagedFilesFilename /\%(\f\+\| \)\+\ze|\d\+| / nextgroup=TTagedFilesLNum
     if !empty(nextgroup)
         exec 'syn match TTagedFilesLNum /|\d\+|\s\+/ nextgroup='. nextgroup
     else
@@ -80,11 +81,19 @@ function! tlib#qfl#Balloon() "{{{3
     let baseidx = world.GetBaseIdx0(current)
     " TLogVAR world.offset, v:beval_lnum, current, baseidx
     let item = world.data[baseidx]
+    let bufnr = get(item, 'bufnr', 0)
+    let bufname = get(item, 'filename', '')
+    if bufnr == 0 && !empty(bufname)
+        let bufnr = bufnr(bufname)
+    endif
+    if empty(bufname) && bufnr > 0
+        let bufname = bufname(bufnr)
+    endif
     " TLogVAR item
-    if item.bufnr == 0
+    if bufnr == 0
         return ''
     else
-        let lines = [printf("%d#%d: %s", item.bufnr, item.lnum, bufname(item.bufnr))]
+        let lines = [printf("%d#%d: %s", bufnr, item.lnum, bufname)]
         if has('balloon_multiline')
             let desc = {'nr': 'Error number', 'type': 'Error type', 'text': ''}
             for key in ['nr', 'type', 'text']
@@ -273,6 +282,7 @@ endf
 
 function! tlib#qfl#QflList(list, ...) abort "{{{3
     TVarArg ['world_dict', {}], ['anyway', 0], ['suspended', 0]
+    Tlibtrace 'tlib', world_dict, anyway, suspended
     " TLogVAR a:list, world_dict, anyway, suspended
     if !anyway && empty(a:list)
         return

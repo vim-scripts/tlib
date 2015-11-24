@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2010-03-25.
-" @Last Change: 2015-11-02.
-" @Revision:    11.0.34
+" @Last Change: 2015-11-23.
+" @Revision:    21.0.34
 
 
 if !exists('g:tlib#date#ShortDatePrefix') | let g:tlib#date#ShortDatePrefix = '20' | endif "{{{2
@@ -14,6 +14,16 @@ let g:tlib#date#dayshift = 60 * 60 * 24
 " let g:tlib#date#date_rx = '\<\(\d\{4}\)-\(\d\d\)-\(\d\d\)\%(\s\+\(\(\d\d\):\(\d\d\)\)\)\?\>'
 let g:tlib#date#date_rx = '\<\(\d\{4}\)-\(\d\d\)-\(\d\d\)\>'
 let g:tlib#date#date_format = '%Y-%m-%d'
+
+
+function! tlib#date#IsDate(text) abort "{{{3
+    return a:text =~# '^'. g:tlib#date#date_rx .'$'
+endf
+
+
+function! tlib#date#Format(secs1970) abort "{{{3
+    return strftime(g:tlib#date#date_format, a:secs1970)
+endf
 
 
 " :display: tlib#date#DiffInDays(date1, ?date2=localtime(), ?allow_zero=0)
@@ -129,14 +139,14 @@ function! tlib#date#Shift(date, shift) abort "{{{3
     if a:shift =~ 'd$'
         let secs = tlib#date#SecondsSince1970(a:date) + g:tlib#date#dayshift * n
         " TLogVAR secs
-        let date = strftime(g:tlib#date#date_format, secs)
+        let date = tlib#date#Format(secs)
     elseif a:shift =~ 'w$'
         let secs = tlib#date#SecondsSince1970(a:date) + g:tlib#date#dayshift * n * 7
-        let date = strftime(g:tlib#date#date_format, secs)
+        let date = tlib#date#Format(secs)
     elseif a:shift =~ 'm$'
         let d = str2nr(ml[3])
         let ms = str2nr(ml[2]) + n
-        let m = ms % 12 + 1
+        let m = (ms - 1) % 12 + 1
         let yr = str2nr(ml[1]) + ms / 12
         let date = printf('%04d-%02d-%02d', yr, m, d)
         " TLogVAR d, ms, m, yr, date

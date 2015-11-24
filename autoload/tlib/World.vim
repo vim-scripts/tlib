@@ -1,7 +1,7 @@
 " @Author:      Tom Link (micathom AT gmail com?subject=[vim])
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
-" @Revision:    1424
+" @Revision:    1432
 
 " :filedoc:
 " A prototype used by |tlib#input#List|.
@@ -359,6 +359,7 @@ endf
 
 " :nodoc:
 function! s:prototype.SelectItem(mode, index) dict "{{{3
+    " TLogVAR a:mode, a:index
     let bi = self.GetBaseIdx(a:index)
     " if self.RespondTo('MaySelectItem')
     "     if !self.MaySelectItem(bi)
@@ -683,13 +684,19 @@ endf
 " :nodoc:
 function! s:prototype.ReduceFilter() dict "{{{3
     " TLogVAR self.filter
-    if self.filter[0] == [''] && len(self.filter) > 1
-        call remove(self.filter, 0)
-    elseif empty(self.filter[0][0]) && len(self.filter[0]) > 1
-        call remove(self.filter[0], 0)
-    else
-        call self.matcher.ReduceFrontFilter(self)
-    endif
+    let reduced = 0
+    while !reduced
+        if self.filter[0] == [''] && len(self.filter) > 1
+            call remove(self.filter, 0)
+        elseif empty(self.filter[0][0]) && len(self.filter[0]) > 1
+            call remove(self.filter[0], 0)
+        else
+            call self.matcher.ReduceFrontFilter(self)
+        endif
+        if self.IsValidFilter()
+            let reduced = 1
+        endif
+    endwh
 endf
 
 
@@ -838,6 +845,7 @@ function! s:prototype.UseInputListScratch() dict "{{{3
         else
             syntax match InputlListIndex /^\d\+:\s/
         endif
+        call tlib#hook#Run('tlib_UseInputListScratch', self)
         syntax match InputlListCursor /^\d\+\* .*$/ contains=InputlListIndex
         syntax match InputlListSelected /^\d\+# .*$/ contains=InputlListIndex
         hi def link InputlListIndex Constant
@@ -848,7 +856,6 @@ function! s:prototype.UseInputListScratch() dict "{{{3
         " let b:tlibDisplayListMarks = {}
         let b:tlibDisplayListMarks = []
         let b:tlibDisplayListWorld = self
-        call tlib#hook#Run('tlib_UseInputListScratch', self)
         let w:tlib_list_init = 1
     endif
     return scratch
